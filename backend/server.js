@@ -2,30 +2,36 @@ import express from "express";
 import dotenv from "dotenv";
 import { auth } from "express-oauth2-jwt-bearer";
 import authRoutes from "./routes/auth.js";
-
+import opportunitiesRoutes from "./routes/opportunities.js";
+//import adminRoutes from "./routes/admin.js";
+//import orgRoutes from "./routes/org.js";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-// ✅ Middleware to verify Auth0 JWTs
+// ✅ Auth0 JWT middleware
 const jwtCheck = auth({
   audience: process.env.AUTH0_AUDIENCE,
   issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
   tokenSigningAlg: "RS256",
 });
 
-// Apply it globally or selectively
-app.use("/api", jwtCheck);
+// ✅ Public routes
+app.use("/api/opportunities", opportunitiesRoutes);
 
-// Example protected route
-app.get("/api/protected", (req, res) => {
+// ✅ Protected routes
+app.use("/api/auth", jwtCheck, authRoutes);
+//app.use("/api/admin", jwtCheck, adminRoutes);
+//app.use("/api/org", jwtCheck, orgRoutes);
+
+// ✅ Example protected test route
+app.get("/api/protected", jwtCheck, (req, res) => {
   res.json({ message: "Access granted ✅ You are authenticated!" });
 });
 
+// ✅ Server start
 app.listen(process.env.PORT || 3000, () =>
   console.log(`🚀 Server running on port ${process.env.PORT || 3000}`)
 );
-
-app.use("/api/auth", jwtCheck, authRoutes);
