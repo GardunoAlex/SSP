@@ -11,10 +11,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.76.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "express-oauth2-jwt-bearer": "^1.7.1"
+    "express-oauth2-jwt-bearer": "^1.7.1",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
