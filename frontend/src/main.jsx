@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { Auth0Provider } from "@auth0/auth0-react";
+import Saved from "./pages/Saved.jsx";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.jsx";
@@ -21,6 +22,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/opportunities" element={<Opportunities />} />
+          <Route path="/saved" element={<Saved />} />
+
         </Routes>
       </BrowserRouter>
     </Auth0Provider>

@@ -8,9 +8,30 @@ const OpportunitiesFeed = ({ searchTerm }) => {
   const [saved, setSaved] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const [userId, setUserId] = useState(null);
 
+  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
   const debouncedSearch = useDebounce(searchTerm, 300);
+
+  // ✅ Sync user ONCE after login
+  useEffect(() => {
+    const syncUser = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const token = await getAccessTokenSilently();
+        const res = await fetch("http://localhost:3000/api/auth/sync", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        const id = data.data?.[0]?.id;
+        if (id) setUserId(id);
+      } catch (err) {
+        console.error("Error syncing user:", err);
+      }
+    };
+    syncUser();
+  }, [isAuthenticated, getAccessTokenSilently]);
 
   // ✅ Fetch all opportunities
   useEffect(() => {
@@ -29,71 +50,43 @@ const OpportunitiesFeed = ({ searchTerm }) => {
     fetchOpportunities();
   }, []);
 
-  // ✅ Fetch saved opportunities (for logged-in user)
-    useEffect(() => {
+  // ✅ Fetch saved opportunities for user
+  useEffect(() => {
     const fetchSaved = async () => {
-        if (!isAuthenticated || !user) return;
-        try {
-        const token = await getAccessTokenSilently();
-        const syncRes = await fetch("http://localhost:3000/api/auth/sync", {
-            method: "POST",
-            headers: {
-            Authorization: `Bearer ${token}`,
-            },
-        });
-        const syncData = await syncRes.json();
-        const userId = syncData.data?.[0]?.id;
-        if (!userId) return;
-
-        const savedRes = await fetch(
-            `http://localhost:3000/api/saved/${userId}`
-        );
-        const savedData = await savedRes.json();
-        const savedIds = savedData.map((s) => s.opportunity_id);
+      if (!isAuthenticated || !userId) return;
+      try {
+        const res = await fetch(`http://localhost:3000/api/saved/${userId}`);
+        const data = await res.json();
+        const savedIds = data.map((s) => s.opportunity_id);
         setSaved(savedIds);
-        } catch (err) {
+      } catch (err) {
         console.error("Error fetching saved:", err);
-        }
+      }
     };
-
     fetchSaved();
-    }, [isAuthenticated, user, getAccessTokenSilently]);
+  }, [isAuthenticated, userId]);
 
-
-  // ✅ Handle save/unsave
+  // ✅ Handle save/unsave without resyncing user
   const handleSave = async (opportunityId) => {
     if (!isAuthenticated) {
       alert("Please log in to save opportunities.");
       return;
     }
+    if (!userId) {
+      console.error("No user ID found in state");
+      return;
+    }
+
+    const isAlreadySaved = saved.includes(opportunityId);
 
     try {
-      const token = await getAccessTokenSilently();
-      const syncRes = await fetch("http://localhost:3000/api/auth/sync", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const syncData = await syncRes.json();
-      const userId = syncData.data?.[0]?.id;
-      if (!userId) return;
-
-      const isAlreadySaved = saved.includes(opportunityId);
-
       if (isAlreadySaved) {
-        // Remove from saved
-        await fetch("http://localhost:3000/api/saved", {
+        await fetch(`http://localhost:3000/api/saved/${opportunityId}`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: userId,
-            opportunity_id: opportunityId,
-          }),
         });
         setSaved(saved.filter((id) => id !== opportunityId));
       } else {
-        // Add to saved
         await fetch("http://localhost:3000/api/saved", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -109,7 +102,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
     }
   };
 
-  // ✅ Filter by search term
+  // ✅ Filter opportunities
   const filtered = opportunities.filter((opp) => {
     const term = debouncedSearch?.toLowerCase() || "";
     return (
@@ -180,7 +173,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
           )}
 
           <a
-            href={opp.link}
+            href={opp.apply_link}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block mt-3 bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-600 transition"

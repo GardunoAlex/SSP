@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { GraduationCap } from "lucide-react";
 
@@ -15,8 +15,8 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white shadow-sm fixed w-full top-0 z-50 border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+      <div className=" max-w mx-auto px-4 sm:px-6 lg:px-8">
+        <div className=" flex items-center justify-between h-20">
           {/* Left section: Logo */}
           <div
             className="flex items-center cursor-pointer gap-1 transition-transform duration-200 hover:scale-105"
@@ -30,19 +30,41 @@ const Navbar = () => {
 
           {/* Desktop menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105">
+            <button
+              onClick={() => navigate("/saved")}
+              className={({ isActive }) =>
+                `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
+                  isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
+                }`
+              }
+            >
+              Saved
+            </button>
+            <NavLink to="/" className={({ isActive }) =>
+              `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
+                isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
+              }`
+            }>
               Home
-            </Link>
-            <Link to="/opportunities" className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105">
+            </NavLink>
+            <NavLink to="/opportunities" className={({ isActive }) =>
+                `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
+                  isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
+                }`
+              }>
               Opportunities
-            </Link>
-            <Link to="/about" className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105">
+            </NavLink>
+            <NavLink to="/about" className={({ isActive }) =>
+                `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
+                  isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
+                }`
+              }>
               About
-            </Link>
+            </NavLink>
 
             {/* Auth buttons */}
             {isAuthenticated ? (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 ">
                 <img
                   src={user?.picture}
                   alt="User avatar"

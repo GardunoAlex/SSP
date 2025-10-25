@@ -10,7 +10,7 @@ router.get("/", async (req, res) => {
         const {data, error} = await supabase
         .from("opportunities")
         .select("*")
-        .eq("status", "open");
+        .eq("status", "active");
 
         if (error) throw error; 
         res.json(data);
