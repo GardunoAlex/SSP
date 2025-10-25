@@ -30,8 +30,10 @@ router.post("/sync", async (req, res) => {
         email: user.email,
         name: user.name || "",
         role: "student",
-      })
-      .select();
+      }, 
+      { onConflict: "auth_id" }
+    )
+    .select();
 
     if (error) {
       console.error(error);

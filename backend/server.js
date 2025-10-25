@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import { auth } from "express-oauth2-jwt-bearer";
 import authRoutes from "./routes/auth.js";
 import opportunitiesRoutes from "./routes/opportunities.js";
+import cors from "cors";
+import savedRoutes from "./routes/saved.js";
+
 //import adminRoutes from "./routes/admin.js";
 //import orgRoutes from "./routes/org.js";
 
@@ -17,6 +20,18 @@ const jwtCheck = auth({
   issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
   tokenSigningAlg: "RS256",
 });
+
+// cors middleware
+app.use(
+  cors({
+    origin: "http://localhost:5173", // your frontend dev server
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+
+app.use("/api/saved", savedRoutes);
 
 // ✅ Public routes
 app.use("/api/opportunities", opportunitiesRoutes);
