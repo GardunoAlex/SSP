@@ -21,6 +21,25 @@ router.get("/", async (req, res) => {
     }
 });
 
+// Get a single opportunity by ID
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from("opportunities")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching opportunity:", err);
+    res.status(500).json({ error: "Failed to fetch opportunity" });
+  }
+});
+
+
 // post, create opportunity
 
 router.post("/", async (req, res) => {

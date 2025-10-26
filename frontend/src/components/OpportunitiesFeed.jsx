@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import useDebounce from "../hooks/useDebounce";
+import { useNavigate } from "react-router-dom";
 
 const OpportunitiesFeed = ({ searchTerm }) => {
   const [opportunities, setOpportunities] = useState([]);
@@ -12,6 +13,8 @@ const OpportunitiesFeed = ({ searchTerm }) => {
 
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();
   const debouncedSearch = useDebounce(searchTerm, 300);
+
+  const navigate = useNavigate();
 
   // ✅ Sync user ONCE after login
   useEffect(() => {
@@ -172,14 +175,12 @@ const OpportunitiesFeed = ({ searchTerm }) => {
             </div>
           )}
 
-          <a
-            href={opp.apply_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-3 bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-600 transition"
-          >
+            <a
+            onClick={() => navigate(`/opportunity/${opp.id}`)}
+            className="inline-block mt-3 bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-600 transition cursor-pointer"
+            >
             View Details
-          </a>
+            </a>
         </div>
       ))}
     </div>

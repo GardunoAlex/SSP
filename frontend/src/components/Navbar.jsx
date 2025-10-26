@@ -1,70 +1,71 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 
-
-const Navbar = () => {
+export default function Navbar() {
+  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
   const navigate = useNavigate();
+
+  const role = user?.["https://studentstarter.com/role"]; // 👈 get custom claim
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
 
   return (
-    <nav className="bg-white shadow-sm fixed w-full top-0 z-50 border-b border-gray-200">
-      <div className=" max-w mx-auto px-4 sm:px-6 lg:px-8">
-        <div className=" flex items-center justify-between h-20">
-          {/* Left section: Logo */}
+    <nav className="bg-white shadow-sm fixed w-full top-0 z-50 border-b border-gray-200 ">
+      <div className="max-w mx-auto px-4 sm:px-6 lg:px-8 ">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo */}
           <div
             className="flex items-center cursor-pointer gap-1 transition-transform duration-200 hover:scale-105"
             onClick={() => navigate("/")}
           >
             <GraduationCap className="text-indigo-600 w-7 h-7" />
             <span className="text-2xl font-bold text-indigo-600">Student</span>
-            <span className="text-2xl font-bold text-yellow-400">Starter</span>
-            <span className="text-2xl font-bold text-indigo-600">+</span>
+            <span className="text-2xl font-bold text-yellow-400">Starter+</span>
           </div>
 
           {/* Desktop menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <button
-              onClick={() => navigate("/saved")}
-              className={({ isActive }) =>
-                `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
-                  isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
-                }`
-              }
-            >
-              Saved
-            </button>
-            <NavLink to="/" className={({ isActive }) =>
-              `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
-                isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
-              }`
-            }>
-              Home
-            </NavLink>
-            <NavLink to="/opportunities" className={({ isActive }) =>
-                `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
-                  isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
-                }`
-              }>
-              Opportunities
-            </NavLink>
-            <NavLink to="/about" className={({ isActive }) =>
-                `text-gray-700 font-medium transition-transform duration-200 hover:scale-105 ${
-                  isActive ? "text-indigo-600 border-b-2 border-indigo-600 pb-1" : ""
-                }`
-              }>
-              About
-            </NavLink>
+            {/* Dynamic role-based links */}
+            {isAuthenticated && role === "student" && (
+              <Link
+                to="/saved"
+                className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
+              >
+                Saved
+              </Link>
+            )}
 
-            {/* Auth buttons */}
+            {isAuthenticated && role === "org" && (
+              <Link
+                to="/org/dashboard"
+                className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
+              >
+                Dashboard
+              </Link>
+            )}
+
+            <Link
+              to="/opportunities"
+              className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
+            >
+              Opportunities
+            </Link>
+
+            <Link
+              to="/about"
+              className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
+            >
+              About
+            </Link>
+
+            {/* Auth Buttons */}
             {isAuthenticated ? (
-              <div className="flex items-center space-x-3 ">
+              <div className="flex items-center space-x-3">
                 <img
                   src={user?.picture}
                   alt="User avatar"
@@ -102,13 +103,26 @@ const Navbar = () => {
       {/* Mobile dropdown */}
       {menuOpen && (
         <div className="md:hidden bg-white shadow-md border-t border-gray-200">
-          <Link
-            to="/"
-            onClick={() => setMenuOpen(false)}
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
-          >
-            Home
-          </Link>
+          {isAuthenticated && role === "student" && (
+            <Link
+              to="/saved"
+              onClick={() => setMenuOpen(false)}
+              className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+            >
+              Saved
+            </Link>
+          )}
+
+          {isAuthenticated && role === "org" && (
+            <Link
+              to="/org/dashboard"
+              onClick={() => setMenuOpen(false)}
+              className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+            >
+              Dashboard
+            </Link>
+          )}
+
           <Link
             to="/opportunities"
             onClick={() => setMenuOpen(false)}
@@ -116,6 +130,7 @@ const Navbar = () => {
           >
             Opportunities
           </Link>
+
           <Link
             to="/about"
             onClick={() => setMenuOpen(false)}
@@ -149,6 +164,4 @@ const Navbar = () => {
       )}
     </nav>
   );
-};
-
-export default Navbar;
+}

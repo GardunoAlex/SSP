@@ -2,8 +2,8 @@ import { Search } from "lucide-react"; // lightweight icon library (optional)
                                           
 const Hero = ({ searchTerm, setSearchTerm }) => {
   return (
-    <section className="bg-gray-50 py-20">
-      <div className="max-w-5xl mx-auto text-center px-4">
+    <section className="bg-gray-50 py-20 ">
+      <div className="max-w-5xl mx-auto text-center px-4 pt-20">
         <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
           Find Your Next{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">

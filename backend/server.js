@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.js";
 import opportunitiesRoutes from "./routes/opportunities.js";
 import cors from "cors";
 import savedRoutes from "./routes/saved.js";
+import orgRoutes from "./routes/org.js";
 
 //import adminRoutes from "./routes/admin.js";
 //import orgRoutes from "./routes/org.js";
@@ -32,6 +33,8 @@ app.use(
 
 
 app.use("/api/saved", savedRoutes);
+
+app.use("/api/org", jwtCheck, orgRoutes);
 
 // ✅ Public routes
 app.use("/api/opportunities", opportunitiesRoutes);

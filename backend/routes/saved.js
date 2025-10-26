@@ -56,16 +56,27 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { error } = await supabase.from("saved_opportunities").delete().eq("id", id);
+    const { user_id, opportunity_id } = req.body;
+
+    if (!user_id || !opportunity_id) {
+      return res.status(400).json({ error: "Missing user_id or opportunity_id" });
+    }
+
+    const { error } = await supabase
+      .from("saved_opportunities")
+      .delete()
+      .eq("user_id", user_id)
+      .eq("opportunity_id", opportunity_id);
+
     if (error) throw error;
-    res.json({ message: "Removed from saved" });
+    res.json({ message: "Unsave successful" });
   } catch (err) {
-    console.error("Error unsaving opportunity:", err);
-    res.status(500).json({ error: "Failed to unsave opportunity" });
+    console.error("Error unsaving:", err);
+    res.status(500).json({ error: "Failed to unsave" });
   }
 });
+
 
 export default router;

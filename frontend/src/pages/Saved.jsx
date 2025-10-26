@@ -47,16 +47,20 @@ export default function Saved() {
   }, [isAuthenticated, userId]);
 
   // ✅ Unsave opportunity
-  const handleUnsave = async (oppId) => {
+    const handleUnsave = async (oppId) => {
+    if (!userId) return;
     try {
-      await fetch(`http://localhost:3000/api/saved/${oppId}`, {
+        await fetch("http://localhost:3000/api/saved", {
         method: "DELETE",
-      });
-      setSaved((prev) => prev.filter((o) => o.id !== oppId));
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, opportunity_id: oppId }),
+        });
+        setSaved((prev) => prev.filter((o) => o.id !== oppId));
     } catch (err) {
-      console.error("Error unsaving opportunity:", err);
+        console.error("Error unsaving:", err);
     }
-  };
+    };
+
 
   if (!isAuthenticated)
     return (
