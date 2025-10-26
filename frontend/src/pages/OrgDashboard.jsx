@@ -21,7 +21,7 @@ export default function OrgDashboard() {
     const fetchOpportunities = async () => {
       try {
         const token = await getAccessTokenSilently();
-        const res = await fetch("http://localhost:3000/api/org/opportunities", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/org/opportunities`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -41,7 +41,7 @@ export default function OrgDashboard() {
     e.preventDefault();
     try {
       const token = await getAccessTokenSilently();
-      const res = await fetch("http://localhost:3000/api/org/opportunities", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/org/opportunities`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -138,7 +138,7 @@ export default function OrgDashboard() {
                         onClick={async () => {
                             try {
                             const token = await getAccessTokenSilently();
-                            await fetch(`http://localhost:3000/api/org/opportunities/${opp.id}`, {
+                            await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/org/opportunities/${opp.id}`, {
                                 method: "DELETE", // backend updates status
                                 headers: { Authorization: `Bearer ${token}` },
                             });

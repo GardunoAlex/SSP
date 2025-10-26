@@ -15,7 +15,7 @@ export default function Saved() {
       if (!isAuthenticated) return;
       try {
         const token = await getAccessTokenSilently();
-        const res = await fetch("http://localhost:3000/api/auth/sync", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -34,7 +34,7 @@ export default function Saved() {
     const fetchSaved = async () => {
       if (!isAuthenticated || !userId) return;
       try {
-        const res = await fetch(`http://localhost:3000/api/saved/${userId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`);
         const data = await res.json();
         setSaved(data);
       } catch (err) {
@@ -50,7 +50,7 @@ export default function Saved() {
     const handleUnsave = async (oppId) => {
     if (!userId) return;
     try {
-        await fetch("http://localhost:3000/api/saved", {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, opportunity_id: oppId }),

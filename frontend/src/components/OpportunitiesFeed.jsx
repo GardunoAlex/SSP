@@ -22,7 +22,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
       if (!isAuthenticated) return;
       try {
         const token = await getAccessTokenSilently();
-        const res = await fetch("http://localhost:3000/api/auth/sync", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -40,7 +40,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/opportunities");
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities`);
         if (!res.ok) throw new Error("Failed to fetch opportunities");
         const data = await res.json();
         setOpportunities(data);
@@ -58,7 +58,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
     const fetchSaved = async () => {
       if (!isAuthenticated || !userId) return;
       try {
-        const res = await fetch(`http://localhost:3000/api/saved/${userId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`);
         const data = await res.json();
         const savedIds = data.map((s) => s.opportunity_id);
         setSaved(savedIds);
@@ -84,13 +84,13 @@ const OpportunitiesFeed = ({ searchTerm }) => {
 
     try {
       if (isAlreadySaved) {
-        await fetch(`http://localhost:3000/api/saved/${opportunityId}`, {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${opportunityId}`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
         });
         setSaved(saved.filter((id) => id !== opportunityId));
       } else {
-        await fetch("http://localhost:3000/api/saved", {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

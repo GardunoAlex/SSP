@@ -11,7 +11,7 @@ export default function useSyncUser() {
     const syncUser = async () => {
       try {
         const token = await getAccessTokenSilently();
-        const res = await fetch("http://localhost:3000/api/auth/sync", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

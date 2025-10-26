@@ -11,7 +11,7 @@ export default function OpportunityDetails() {
   useEffect(() => {
     const fetchOpportunity = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/opportunities/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/opportunities/${id}`);
         if (!res.ok) throw new Error("Failed to fetch opportunity");
         const data = await res.json();
         setOpportunity(data);
