@@ -27,7 +27,9 @@ const jwtCheck = auth({
 //http://localhost:5173
 app.use(
   cors({
-    origin: "https://ssp-phi-ivory.vercel.app", // your frontend dev server
+    origin: ["https://ssp-phi-ivory.vercel.app",
+      "http://localhost:5173",
+    ], // your frontend dev server
     methods: ["GET", "POST", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
