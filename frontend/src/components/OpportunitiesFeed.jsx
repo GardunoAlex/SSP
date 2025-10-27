@@ -22,6 +22,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
       if (!isAuthenticated) return;
       try {
         const token = await getAccessTokenSilently();
+        console.log("/haha")
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
