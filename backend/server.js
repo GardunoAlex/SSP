@@ -27,14 +27,15 @@ const jwtCheck = auth({
 //http://localhost:5173
 app.use(
   cors({
-    origin: ["https://ssp-phi-ivory.vercel.app",
-      "http://localhost:5173",
-    ], // your frontend dev server
+    origin: [
+      "http://localhost:5173",          // for local dev
+      "https://ssp-phi-ivory.vercel.app" // ✅ your deployed frontend
+    ],
     methods: ["GET", "POST", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
-
 
 app.use("/api/saved", savedRoutes);
 
