@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Hero from "../components/Hero";
-import Navbar from "../components/navbar";
+import Navbar from "../components/Navbar";
 import OpportunitiesFeed from "../components/OpportunitiesFeed";
 
 

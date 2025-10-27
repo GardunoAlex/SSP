@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { BookmarkX } from "lucide-react";
-import Navbar from "../components/navbar";
+import Navbar from "../components/Navbar";
 
 export default function Saved() {
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();

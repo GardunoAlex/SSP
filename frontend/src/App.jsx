@@ -1,5 +1,5 @@
 import useSyncUser from "./hooks/useSyncUser";
-import Navbar from "./components/navbar";
+import Navbar from "./components/Navbar";
 
 function App() {
   useSyncUser(); // 👈 automatically runs sync after login
