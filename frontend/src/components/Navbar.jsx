@@ -80,6 +80,15 @@ export default function Navbar() {
               </Link>
             )}
 
+            {isAuthenticated && role === "admin" &&(
+              <Link
+                to="/admin/dashboard"
+                className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
+              >
+                Dashboard
+              </Link>
+            )}
+
             <Link
               to="/opportunities"
               className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
