@@ -10,6 +10,9 @@ import OrgDashboard from "./pages/OrgDashboard.jsx";
 import Home from "./pages/Home.jsx";
 import OpportunityDetails from "./pages/OpportunityDetails.jsx";
 import "./index.css";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import Signup from "./pages/SignUp.jsx";
+import Auth from "./pages/Auth.jsx";
 
 // <Route path="/" element={<App />} />
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -30,6 +33,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/org/dashboard" element={<OrgDashboard />} />
           <Route path="/" element={<Home />} />
           <Route path="/opportunity/:id" element={<OpportunityDetails />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/auth" element={<Auth />} />
 
 
         </Routes>

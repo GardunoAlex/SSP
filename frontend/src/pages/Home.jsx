@@ -5,13 +5,14 @@ export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="pt-24 bg-gradient-to-b from-indigo-50 to-white min-h-screen">
+    <div className="bg-gradient-to-t from-indigo-300 to-stone-50 min-h-screen">
       {/* Hero Section */}
       <section className="text-center max-w-4xl mx-auto px-6 py-16">
         <div className="flex justify-center items-center mb-4 gap-2">
           <GraduationCap className="text-indigo-600 w-10 h-10" />
-          <h1 className="text-4xl sm:text-5xl font-bold text-indigo-600">
-            Student<span className="text-yellow-400">Starter</span>+
+          <h1 className="text-4xl sm:text-5xl font-bold text-sky-400">
+            Student<span className="text-yellow-400">Starter</span>
+            <span className="text-indigo-600">+</span>
           </h1>
         </div>
         <p className="text-gray-600 mt-4 text-lg">
@@ -21,7 +22,7 @@ export default function Home() {
         <div className="mt-8 flex justify-center gap-4">
           <button
             onClick={() => navigate("/opportunities")}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-6 py-3 rounded-lg shadow-md transition"
+            className="bg-blue-500 hover:bg-indigo-600 text-white font-medium px-6 py-3 rounded-lg shadow-md transition"
           >
             Explore Opportunities
           </button>
@@ -36,7 +37,7 @@ export default function Home() {
             Discover Opportunities
           </h3>
           <p className="text-gray-600 text-sm">
-            Browse verified internships, scholarships, and research programs tailored to your interests.
+            Browse verified events, mentorships, and programs tailored to your interests.
           </p>
         </div>
 

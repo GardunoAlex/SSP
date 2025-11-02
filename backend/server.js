@@ -7,7 +7,7 @@ import cors from "cors";
 import savedRoutes from "./routes/saved.js";
 import orgRoutes from "./routes/org.js";
 
-//import adminRoutes from "./routes/admin.js";
+import adminRoutes from "./routes/admin.js";
 //import orgRoutes from "./routes/org.js";
 
 dotenv.config();
@@ -46,7 +46,7 @@ app.use("/api/opportunities", opportunitiesRoutes);
 
 // ✅ Protected routes
 app.use("/api/auth", jwtCheck, authRoutes);
-//app.use("/api/admin", jwtCheck, adminRoutes);
+app.use("/api/admin", jwtCheck, adminRoutes);
 //app.use("/api/org", jwtCheck, orgRoutes);
 
 // ✅ Example protected test route

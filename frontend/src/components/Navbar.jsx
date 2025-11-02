@@ -1,14 +1,45 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 
 export default function Navbar() {
-  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
+  const { isAuthenticated, loginWithRedirect, logout, user, getAccessTokenSilently } = useAuth0();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const [role, setRole] =useState("");
+  const [isVerified, setIsVerified] = useState(false);
 
-  const role = user?.["https://studentstarter.com/role"]; // 👈 get custom claim
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      if (!isAuthenticated) return;
+
+      try {
+        const token = await getAccessTokenSilently();
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        const supaUser = data?.data?.[0];
+
+        // ✅ Pull role from Auth0 claim OR Supabase
+        const roleFromAuth0 = user?.["https://studentstarter.com/role"];
+        const roleFromSupabase = supaUser?.role;
+        setRole(roleFromAuth0 || roleFromSupabase);
+
+        // ✅ Track verification status from Supabase
+        setIsVerified(supaUser?.verified === true);
+      } catch (err) {
+        console.error("Error fetching user verification:", err);
+      }
+    };
+
+    fetchUserStatus();
+  }, [isAuthenticated, getAccessTokenSilently, user]);
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
@@ -40,7 +71,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {isAuthenticated && role === "org" && (
+            {isAuthenticated && role === "org" && isVerified &&(
               <Link
                 to="/org/dashboard"
                 className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
@@ -79,20 +110,24 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
+              <>
               <button
                 onClick={() => loginWithRedirect()}
                 className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
               >
                 Login
               </button>
+
+              <Link
+                to="/signup"
+                className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition font-medium"
+              >
+                Sign Up
+              </Link>
+              </>
             )}
 
-            <Link
-            to="/signup"
-            className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition font-medium"
-          >
-            Sign Up
-          </Link>
+            
           </div>
 
           {/* Mobile menu button */}
