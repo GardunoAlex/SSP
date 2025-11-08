@@ -142,7 +142,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
       {filtered.map((opp) => (
         <div
           key={opp.id}
-          className="relative bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition"
+          className="relative rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition bg-gradient-to-t from-indigo-100 to-gray-50"
         >
           <button
             onClick={() => handleSave(opp.id)}

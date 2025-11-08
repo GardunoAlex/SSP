@@ -50,13 +50,13 @@ export default function Navbar() {
       <div className="max-w mx-auto px-4 sm:px-6 lg:px-8 ">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <div
-            className="flex items-center cursor-pointer gap-1 transition-transform duration-200 hover:scale-105"
-            onClick={() => navigate("/")}
-          >
+          <div className="flex items-center cursor-pointer gap-1 transition-transform duration-200 hover:scale-105"
+            onClick={() => navigate("/")}>
             <GraduationCap className="text-indigo-600 w-7 h-7" />
-            <span className="text-2xl font-bold text-indigo-600">Student</span>
-            <span className="text-2xl font-bold text-yellow-400">Starter+</span>
+            <h1 className="text-2xl sm:text-2xl font-bold text-sky-400">
+              Student<span className="text-yellow-400">Starter</span>
+              <span className="text-indigo-600 text-2xl">+</span>
+            </h1>
           </div>
 
           {/* Desktop menu */}

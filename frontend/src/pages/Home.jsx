@@ -5,7 +5,7 @@ export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="bg-gradient-to-t from-indigo-300 to-stone-50 min-h-screen">
+    <div className="bg-gradient-to-t from-indigo-100 to-stone-50 min-h-screen">
       {/* Hero Section */}
       <section className="text-center max-w-4xl mx-auto px-6 py-16">
         <div className="flex justify-center items-center mb-4 gap-2">
