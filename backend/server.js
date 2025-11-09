@@ -8,7 +8,8 @@ import savedRoutes from "./routes/saved.js";
 import orgRoutes from "./routes/org.js";
 
 import adminRoutes from "./routes/admin.js";
-//import orgRoutes from "./routes/org.js";
+import studentRoutes from "./routes/students.js";
+
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use(
 app.use("/api/saved", savedRoutes);
 
 app.use("/api/org", jwtCheck, orgRoutes);
+app.use("/api/student", jwtCheck, studentRoutes);
 
 // ✅ Public routes
 app.use("/api/opportunities", opportunitiesRoutes);
@@ -47,7 +49,7 @@ app.use("/api/opportunities", opportunitiesRoutes);
 // ✅ Protected routes
 app.use("/api/auth", jwtCheck, authRoutes);
 app.use("/api/admin", jwtCheck, adminRoutes);
-//app.use("/api/org", jwtCheck, orgRoutes);
+
 
 // ✅ Example protected test route
 app.get("/api/protected", jwtCheck, (req, res) => {

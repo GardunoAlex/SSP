@@ -1,7 +1,8 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
+import Modal from "./Modal";
 
 export default function Navbar() {
   const { isAuthenticated, loginWithRedirect, logout, user, getAccessTokenSilently } = useAuth0();
@@ -9,6 +10,12 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [role, setRole] =useState("");
   const [isVerified, setIsVerified] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  function userProfile(){
+    console.log("I got clicked ma boi");
+    setIsOpen(true);
+  }
 
   useEffect(() => {
     const fetchUserStatus = async () => {
@@ -110,6 +117,7 @@ export default function Navbar() {
                   src={user?.picture}
                   alt="User avatar"
                   className="w-8 h-8 rounded-full border border-gray-300"
+                  onClick={userProfile}
                 />
                 <button
                   onClick={handleLogout}
@@ -214,6 +222,8 @@ export default function Navbar() {
 
         </div>
       )}
+
+      <Modal isOpen={isOpen} setIsOpen={setIsOpen} />
     </nav>
   );
 }
