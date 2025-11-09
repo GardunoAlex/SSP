@@ -116,7 +116,7 @@ export default function Navbar() {
                 <img
                   src={user?.picture}
                   alt="User avatar"
-                  className="w-8 h-8 rounded-full border border-gray-300"
+                  className="w-8 h-8 rounded-full border-4 border-indigo-700 hover:scale-125 transition-transform duration-200"
                   onClick={userProfile}
                 />
                 <button
