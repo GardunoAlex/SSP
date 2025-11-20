@@ -88,11 +88,11 @@ export default function Modal( {isOpen, setIsOpen}) {
                                             className="w-25 h-25 rounded-full border-8 border-double border-indigo-600"
                                         />
                                         <h1 className="text-gray-700">{student.name}</h1>
-                                        <p className="text-indigo-400"><span className="font-medium text-gray-700">School:</span> {student.school}</p>
-                                        <p className="text-indigo-400"><span className="font-medium text-gray-700">Major:</span>{student.major} </p>
-                                        <p className="text-indigo-400"><span className="font-medium text-gray-700">GPA:</span> {student.gpa} </p>
-                                        <p className="text-indigo-400"><span className="font-medium text-gray-700">Email:</span> {student.email} </p>
-                                        <p className="text-indigo-400"><span className="font-medium text-gray-700">Joined:</span> {joined}</p>
+                                        <p >School: {student.school}</p>
+                                        <p >Major:{student.major} </p>
+                                        <p >GPA: {student.gpa} </p>
+                                        <p >Email: {student.email} </p>
+                                        <p >Joined:{joined}</p>
                                     </div>
                                 </div>
                             </div>
