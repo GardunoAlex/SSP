@@ -10,6 +10,11 @@ async function getSupabaseStudentId(token) {
   const userRes = await fetch("https://dev-hdl1kw87a8apz4ni.us.auth0.com/userinfo", {
     headers: { Authorization: `Bearer ${token}` },
   });
+
+  //  have to check if the user check was successful or not. 
+  if(!userRes.ok){
+    throw new Error("Supabase student not found");
+  }
   const user = await userRes.json();
 
   // 2️⃣ Find matching user in Supabase
