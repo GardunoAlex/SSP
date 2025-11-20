@@ -13,28 +13,44 @@ export default function Modal( {isOpen, setIsOpen}) {
 
     
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            try{
-                const token = await getAccessTokenSilently();
-                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/student`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                // data is an object -- I think -- that essentially holds the data that you just asked for. 
-                const data = await res.json();
-                const studentData = data[0];
+    const fetchUserInfo = async () => {
+        try {
+            const token = await getAccessTokenSilently();
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/student`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
-                setStudent(studentData);
-
-                const date = new Date(studentData.created_at);
-                const joinedDate = `${date.toLocaleString("default", { month: "long" })} ${date.getFullYear()}`;
-                setJoined(joinedDate);
-            } catch (err) {
-                console.log("Error fetching student: ", err);
+            // ✅ Check if response is OK before parsing JSON
+            if (!res.ok) {
+                throw new Error(`Server error: ${res.status} ${res.statusText}`);
             }
-        };
-        fetchUserInfo();
-    
 
+            // ✅ Check content-type to ensure it's JSON
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                console.error("Expected JSON but got:", text.substring(0, 200));
+                throw new Error("Server returned non-JSON response");
+            }
+
+            const data = await res.json();
+            const studentData = data[0];
+
+            setStudent(studentData);
+
+            const date = new Date(studentData.created_at);
+            const joinedDate = `${date.toLocaleString("default", { month: "long" })} ${date.getFullYear()}`;
+            setJoined(joinedDate);
+        } catch (err) {
+            console.error("Error fetching student:", err);
+            // ✅ Optional: Set error state to show to user
+            // setError(err.message);
+        }
+    };
+    
+    if (isAuthenticated) {
+        fetchUserInfo();
+    }
     }, [isAuthenticated, getAccessTokenSilently]);
 
     const handleSave = async () => {
