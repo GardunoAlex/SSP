@@ -5,10 +5,10 @@ import { CircleX, PencilLine, CircleCheck } from 'lucide-react';
 
 export default function Modal( {isOpen, setIsOpen}) {
     const { isAuthenticated, getAccessTokenSilently, user } = useAuth0();
-    const [student, setStudent] = useState([]);
+    const [currUser, setCurrUser] = useState({});
     const [joined, setJoined] = useState("");
     const [edit, setEdit] = useState(false);
-    const [newUserData, setNewUserData] = useState({name: student.name || "", school: student.school || "", major: student.major || "", gpa: student.gpa || ""});
+    const [newUserData, setNewUserData] = useState({name: currUser.name || "", school: currUser.school || "", major: currUser.major || "", gpa: currUser.gpa || "", role: currUser.role});
 
 
     
@@ -34,11 +34,9 @@ export default function Modal( {isOpen, setIsOpen}) {
             }
 
             const data = await res.json();
-            const studentData = data[0];
-
-            setStudent(studentData);
-
-            const date = new Date(studentData.created_at);
+            const userData = data[0];
+            setCurrUser(userData);
+            const date = new Date(userData.created_at);
             const joinedDate = `${date.toLocaleString("default", { month: "long" })} ${date.getFullYear()}`;
             setJoined(joinedDate);
         } catch (err) {
@@ -66,8 +64,8 @@ export default function Modal( {isOpen, setIsOpen}) {
                 });
 
                 if (!res.ok) throw new Error("Failed to update student");
-                const updatedStudent = await res.json();
-                setStudent(updatedStudent);
+                const updatedUser = await res.json();
+                setCurrUser(updatedUser);
                 setEdit(false);
         } catch (err) {
             console.log("error updating student: ", err);
@@ -103,12 +101,22 @@ export default function Modal( {isOpen, setIsOpen}) {
                                             alt="User avatar"
                                             className="w-25 h-25 rounded-full border-8 border-double border-indigo-600"
                                         />
-                                        <h1 className="text-gray-700">{student.name}</h1>
-                                        <p >School: {student.school}</p>
-                                        <p >Major:{student.major} </p>
-                                        <p >GPA: {student.gpa} </p>
-                                        <p >Email: {student.email} </p>
-                                        <p >Joined:{joined}</p>
+                                        <h1 className="text-gray-700 text-2xl">{currUser.name}</h1>
+                                        {(currUser.role === "student") ? 
+                                            <>
+                                                <p className="text-lg">School: {currUser.school}</p>
+                                                <p className="text-lg">Major:{currUser.major} </p>
+                                                <p className="text-lg">GPA: {currUser.gpa} </p>
+                                                <p className="text-lg">Email: {currUser.email} </p>
+                                                <p className="text-lg">Joined:{joined}</p>
+                                            </>
+                                            :
+                                            <>
+                                                <p className="text-lg">Email: {currUser.email} </p>
+                                                <p className="text-lg">Joined:{joined}</p>
+                                            </>
+                                        }
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -131,18 +139,35 @@ export default function Modal( {isOpen, setIsOpen}) {
                                     alt="User avatar"
                                     className="w-25 h-25 rounded-full border-8 border-double border-indigo-600"
                                 />
-                                <label className="py-1"> Name: 
-                                    <input className=" rounded-xl bg-indigo-100 border-2 border-indigo-600" type="text" name="name" value={newUserData.name} onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})}/>
-                                </label>
-                                <label className="py-1"> School: 
-                                    <input className=" rounded-xl bg-indigo-100 border-2 border-indigo-600" type="text" name="school" value={newUserData.school} onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})}/>
-                                </label>
-                                <label className="py-1"> Major: 
-                                    <input className=" rounded-xl bg-indigo-100 border-2 border-indigo-600" type="text" name="major" value={newUserData.major} onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})}/>
-                                </label>
-                                <label className="py-1"> GPA: 
-                                    <input className=" rounded-xl bg-indigo-100 border-2 border-indigo-600" type="text" name="gpa" value={newUserData.gpa} onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})}/>
-                                </label>
+                                <p className="text-stone-400 text-base">Please fill out all fields</p>
+                                
+                                {(currUser.role === "student") ? 
+                                    <>
+                                        <label className="py-1 "> Name: 
+                                            <input className="rounded-xl border-2 " type="text" name="name" value={newUserData.name} 
+                                            onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})} placeholder={"  ..."} /> 
+                                        </label>
+                                        <label className="py-1"> School: 
+                                            <input className=" rounded-xl border-2 " type="text" name="school" value={newUserData.school} 
+                                            onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})} placeholder={"  ..."} />
+                                        </label>
+                                        <label className="py-1"> Major: 
+                                            <input className=" rounded-xl border-2 " type="text" name="major" value={newUserData.major} 
+                                            onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})} placeholder={"  ..."} />
+                                        </label>
+                                        <label className="py-1"> GPA: 
+                                            <input className=" rounded-xl  border-2 " type="text" name="gpa" value={newUserData.gpa} 
+                                            onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})} placeholder={"  ..."} />
+                                        </label>
+                                    </> 
+                                    :
+                                    <>
+                                        <label className="py-1 "> Name: 
+                                            <input className="rounded-xl border-2 " type="text" name="name" value={newUserData.name} 
+                                            onChange={(e) => setNewUserData({ ...newUserData, [e.target.name]: e.target.value})} placeholder={"  ..."} /> 
+                                        </label>
+                                    </>
+                                }
                             </div>
                         </div>
                     </div>
