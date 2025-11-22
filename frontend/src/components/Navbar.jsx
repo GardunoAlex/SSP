@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import Modal from "./Modal";
 
-export default function Navbar() {
+export default function NewNav() {
   const { isAuthenticated, loginWithRedirect, logout, user, getAccessTokenSilently } = useAuth0();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -147,7 +147,6 @@ export default function Navbar() {
             
           </div>
 
-          {/* Mobile menu button */}
           <div className="flex md:hidden items-center">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
@@ -159,7 +158,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile dropdown */}
       {menuOpen && (
         <div className="md:hidden bg-white shadow-md border-t border-gray-200">
           {isAuthenticated && role === "student" && (

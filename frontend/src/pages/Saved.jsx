@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { BookmarkX } from "lucide-react";
-import Navbar from "../components/Navbar";
+import NewNav from "../components/newNav.jsx";
 
 export default function Saved() {
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();
@@ -85,7 +85,7 @@ export default function Saved() {
 
   return (
     <div>
-         <Navbar />
+         <NewNav />
         <div className="max-w-6xl mx-auto p-6 mt-20 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {saved.map((opp) => (
             <div

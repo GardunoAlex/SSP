@@ -2,14 +2,17 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Hero from "../components/Hero";
-import Navbar from "../components/Navbar";
+import NewNav from "../components/newNav.jsx";
 import OpportunitiesFeed from "../components/OpportunitiesFeed";
+import WhatWeDo from "../components/WhatWeDo.jsx";
+import Footer from "../components/Footer.jsx";
 
 
 const Opportunities = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
   const [searchTerm, setSearchTerm] = useState(initialSearch);
+  
 
   // Whenever searchTerm changes, update the URL
   useEffect(() => {
@@ -22,7 +25,7 @@ const Opportunities = () => {
 
   return (
     <div>
-      <Navbar />
+      <NewNav />
       <Hero searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <section id="feed" className="max-w-6xl mx-auto px-4 py-10">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">
@@ -30,6 +33,8 @@ const Opportunities = () => {
         </h2>
         <OpportunitiesFeed searchTerm={searchTerm} />
       </section>
+      <WhatWeDo />
+      <Footer />
     </div>
   );
 };
