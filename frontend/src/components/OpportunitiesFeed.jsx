@@ -7,18 +7,19 @@ import {
   MapPin,
   GraduationCap,
   Building2,
+  Lock,
 } from "lucide-react";
 import useDebounce from "../hooks/useDebounce";
 import { useNavigate } from "react-router-dom";
 
-const OpportunitiesFeed = ({ searchTerm }) => {
+const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
   const [opportunities, setOpportunities] = useState([]);
   const [saved, setSaved] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userId, setUserId] = useState(null);
 
-  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
   const debouncedSearch = useDebounce(searchTerm, 300);
 
   const navigate = useNavigate();
@@ -83,10 +84,16 @@ const OpportunitiesFeed = ({ searchTerm }) => {
     fetchSaved();
   }, [isAuthenticated, userId]);
 
-  // ✅ Handle save/unsave without resyncing user
+  // ✅ Handle save/unsave with login check
   const handleSave = async (opportunityId) => {
     if (!isAuthenticated) {
-      alert("Please log in to save opportunities.");
+
+      const shouldLogin = window.confirm(
+        "Please sign in to save opportunities. Would you like to sign in now?"
+      );
+      if (shouldLogin) {
+        loginWithRedirect();
+      }
       return;
     }
     if (!userId) {
@@ -122,6 +129,20 @@ const OpportunitiesFeed = ({ searchTerm }) => {
     }
   };
 
+  // ✅ Handle view details with login check for preview mode
+  const handleViewDetails = (oppId) => {
+    if (isPreview && !isAuthenticated) {
+      const shouldLogin = window.confirm(
+        "Sign in to view full opportunity details and apply. Would you like to sign in now?"
+      );
+      if (shouldLogin) {
+        loginWithRedirect();
+      }
+      return;
+    }
+    navigate(`/opportunity/${oppId}`);
+  };
+
   // ✅ Filter opportunities
   const filtered = opportunities.filter((opp) => {
     const term = debouncedSearch?.toLowerCase() || "";
@@ -132,6 +153,9 @@ const OpportunitiesFeed = ({ searchTerm }) => {
       opp.majors?.some((m) => m.toLowerCase().includes(term))
     );
   });
+
+
+  const displayedOpportunities = isPreview ? filtered.slice(0, 6) : filtered;
 
   if (loading)
     return (
@@ -148,7 +172,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
       </div>
     );
 
-  if (filtered.length === 0)
+  if (displayedOpportunities.length === 0)
     return (
       <div className="text-center py-20">
         <GraduationCap className="w-16 h-16 text-purple-300 mx-auto mb-4" />
@@ -161,7 +185,7 @@ const OpportunitiesFeed = ({ searchTerm }) => {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {filtered.map((opp) => (
+      {displayedOpportunities.map((opp) => (
         <div
           key={opp.id}
           className="relative group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-purple-primary overflow-hidden"
@@ -169,11 +193,20 @@ const OpportunitiesFeed = ({ searchTerm }) => {
           {/* Top accent bar */}
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-primary to-gold"></div>
 
+          {/* Login Required Badge (only for preview mode and non-authenticated) */}
+          {isPreview && !isAuthenticated && (
+            <div className="absolute top-4 left-4 bg-purple-primary text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 z-10">
+              <Lock className="w-3 h-3" />
+              Sign in to apply
+            </div>
+          )}
+
           <div className="p-6">
             {/* Bookmark Button */}
             <button
               onClick={() => handleSave(opp.id)}
               className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-purple-primary hover:text-gold transition-colors duration-300 shadow-md z-10"
+              title={!isAuthenticated ? "Sign in to save" : saved.includes(opp.id) ? "Unsave" : "Save"}
             >
               {saved.includes(opp.id) ? (
                 <BookmarkCheck className="w-5 h-5" />
@@ -234,10 +267,21 @@ const OpportunitiesFeed = ({ searchTerm }) => {
 
             {/* View Details Button */}
             <button
-              onClick={() => navigate(`/opportunity/${opp.id}`)}
-              className="w-full mt-4 bg-purple-primary text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-gold hover:shadow-lg hover:shadow-gold/50 transition-all duration-300"
+              onClick={() => handleViewDetails(opp.id)}
+              className={`w-full mt-4 px-4 py-2.5 rounded-lg font-semibold transition-all duration-300 ${
+                isPreview && !isAuthenticated
+                  ? "bg-purple-100 text-purple-primary border-2 border-purple-primary hover:bg-purple-200"
+                  : "bg-purple-primary text-white hover:bg-gold hover:shadow-lg hover:shadow-gold/50"
+              }`}
             >
-              View Details
+              {isPreview && !isAuthenticated ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Sign In to View
+                </span>
+              ) : (
+                "View Details"
+              )}
             </button>
           </div>
         </div>

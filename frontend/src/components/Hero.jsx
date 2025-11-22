@@ -51,9 +51,21 @@ const Hero = ({ searchTerm, setSearchTerm }) => {
                   placeholder="Search for opportunities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchTerm.trim()) {
+                      navigate(`/opportunities?search=${encodeURIComponent(searchTerm)}`);
+                    }
+                  }}
                   className="w-full max-w-2xl h-14 px-6 pr-14 rounded-full border-2 border-transparent focus:border-purple-300 bg-white shadow-lg shadow-purple-600/10 focus:shadow-xl focus:shadow-purple-600/20 transition-all duration-300 text-lg outline-none"
                 />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-yellow-500 transition-colors duration-300">
+                <button
+                  onClick={() => {
+                    if (searchTerm.trim()) {
+                      navigate(`/opportunities?search=${encodeURIComponent(searchTerm)}`);
+                    }
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-yellow-500 transition-colors duration-300"
+                >
                   <Search size={18} />
                 </button>
               </div>
