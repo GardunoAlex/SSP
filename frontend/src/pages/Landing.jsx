@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import Hero from "../components/Hero";
+import Hero from "../components/Hero.jsx";
 import NewNav from "../components/newNav.jsx";
 import WhatWeDo from "../components/WhatWeDo.jsx";
 import Footer from "../components/Footer.jsx";
 import Features from "../components/features.jsx";
 import FeaturedOpportunities from "../components/FeaturedOpportunities.jsx";
 
-const Opportunities = () => {
+const Landing = () => {
   const [searchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
   const [searchTerm, setSearchTerm] = useState(initialSearch);
@@ -26,4 +26,4 @@ const Opportunities = () => {
   );
 };
 
-export default Opportunities;
+export default Landing;
