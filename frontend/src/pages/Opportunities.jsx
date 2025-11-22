@@ -5,6 +5,7 @@ import NewNav from "../components/newNav.jsx";
 import OpportunitiesFeed from "../components/OpportunitiesFeed";
 import WhatWeDo from "../components/WhatWeDo.jsx";
 import Footer from "../components/Footer.jsx";
+import Features from "../components/features.jsx";
 
 const Opportunities = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,6 +47,7 @@ const Opportunities = () => {
         </div>
         <OpportunitiesFeed searchTerm={searchTerm} />
       </section>
+      <Features />
       <WhatWeDo />
       <Footer />
     </div>
