@@ -25,8 +25,15 @@ const Opportunities = () => {
       <NewNav />
       <Hero searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       
-      <section id="feed" className="max-w-7xl mx-auto px-6 py-20">
-        <div className="mb-12">
+      <section id="feed" className="relative max-w-7xl mx-auto px-6 py-20 overflow-hidden">
+        <div className="absolute inset-0 opacity-5 pointer-events-none"
+          style={{
+            backgroundImage:
+              "repeating-conic-gradient(from 0deg at 50% 50%, #F5A623 0deg 90deg, transparent 90deg 180deg)",
+              backgroundSize: "100px 100px",
+          }}
+        ></div>
+        <div className="relative mb-12">
           <h2 className="text-4xl font-bold text-purple-primary mb-2 inline-block relative">
             Available Opportunities
             <div className="absolute -bottom-1 left-0 w-24 h-1 bg-gold rounded-full"></div>
