@@ -97,10 +97,10 @@ export default function NewNav() {
             )}
 
             <Link
-              to="/opportunities"
+              to="/discover"
               className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
             >
-              Opportunities
+              Discover
             </Link>
 
             <Link

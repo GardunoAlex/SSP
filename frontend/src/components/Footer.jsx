@@ -27,7 +27,7 @@ const Footer = () => {
               About
             </Link>
             <Link to="/opportunities" className="text-slate-300 hover:text-gold transition-colors">
-              Opportunities
+              Discover
             </Link>
             <a href="mailto:hello@studentstarter.com" className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
               <Mail className="w-4 h-4" />
