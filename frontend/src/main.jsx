@@ -2,12 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { Auth0Provider } from "@auth0/auth0-react";
 import Saved from "./pages/Saved.jsx";
-
+import Landing from "./pages/Landing.jsx";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.jsx";
-import Opportunities from "./pages/Opportunities.jsx";
 import OrgDashboard from "./pages/OrgDashboard.jsx";
-import Home from "./pages/Home.jsx";
 import OpportunityDetails from "./pages/OpportunityDetails.jsx";
 import "./index.css";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
@@ -28,10 +26,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <BrowserRouter>
         <Routes>
          
-          <Route path="/opportunities" element={<Opportunities />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/saved" element={<Saved />} />
           <Route path="/org/dashboard" element={<OrgDashboard />} />
-          <Route path="/" element={<Home />} />
           <Route path="/opportunity/:id" element={<OpportunityDetails />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/signup" element={<Signup />} />

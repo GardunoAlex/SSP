@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import Navbar from "../components/Navbar";
+import NewNav from "../components/newNav.jsx";
 
 export default function OrgDashboard() {
   const { isAuthenticated, getAccessTokenSilently, user } = useAuth0();
@@ -69,7 +69,7 @@ export default function OrgDashboard() {
   // ✅ Main render
   return (
     <>
-        <Navbar />
+        <NewNav />
         <div className="max-w-5xl mx-auto mt-20 p-6">
             <h1 className="text-3xl font-bold text-indigo-600 mb-6">Organization Dashboard</h1>
 
