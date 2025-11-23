@@ -4,7 +4,7 @@ import Hero from "../components/Hero.jsx";
 import NewNav from "../components/newNav.jsx";
 import WhatWeDo from "../components/WhatWeDo.jsx";
 import Footer from "../components/Footer.jsx";
-import Features from "../components/features.jsx";
+import Features from "../components/Features.jsx";
 import FeaturedOpportunities from "../components/FeaturedOpportunities.jsx";
 
 const Landing = () => {

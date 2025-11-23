@@ -24,9 +24,8 @@ const FeaturedOpportunities = () => {
             Discover internships, mentorships, and programs - sign in to save and apply
           </p>
         </div>
-
+        
         <OpportunitiesFeed />
-
         {/* View All Button */}
         <div className="text-center mt-12">
           <Link
