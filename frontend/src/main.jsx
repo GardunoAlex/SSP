@@ -5,12 +5,20 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing.jsx";
 import Discover from "./pages/Discover.jsx";
 import Saved from "./pages/Saved.jsx";
-import OrgDashboard from "./pages/OrgDashboard.jsx";
 import OpportunityDetails from "./pages/OpportunityDetails.jsx";
+import OrgDashboard from "./pages/OrgDashboard.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import Signup from "./pages/SignUp.jsx";
 import Auth from "./pages/Auth.jsx";
 import "./index.css";
+
+// TODO: Create these placeholder pages
+// import StudentDashboard from "./pages/StudentDashboard.jsx";
+// import Stories from "./pages/Stories.jsx";
+// import Organizations from "./pages/Organizations.jsx";
+// import Profile from "./pages/Profile.jsx";
+// import Settings from "./pages/Settings.jsx";
+// import Resume from "./pages/Resume.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -24,14 +32,28 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     >
       <BrowserRouter>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/discover" element={<Discover />} />
           <Route path="/opportunity/:id" element={<OpportunityDetails />} />
-          <Route path="/saved" element={<Saved />} />
-          <Route path="/org/dashboard" element={<OrgDashboard />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/auth" element={<Auth />} />
+
+          {/* Student Routes */}
+          <Route path="/dashboard" element={<div>Student Dashboard - Coming Soon</div>} />
+          <Route path="/saved" element={<Saved />} />
+          <Route path="/stories" element={<div>Stories Page - Coming Soon</div>} />
+          <Route path="/organizations" element={<div>Organizations Page - Coming Soon</div>} />
+          <Route path="/profile" element={<div>Profile Page - Coming Soon</div>} />
+          <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
+          <Route path="/resume" element={<div>Resume Page - Coming Soon</div>} />
+          <Route path="/notifications" element={<div>Notifications Page - Coming Soon</div>} />
+
+          {/* Organization Routes */}
+          <Route path="/org/dashboard" element={<OrgDashboard />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </BrowserRouter>
     </Auth0Provider>
