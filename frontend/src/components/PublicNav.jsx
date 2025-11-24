@@ -41,20 +41,13 @@ const PublicNav = () => {
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           <Link
-            to="/opportunities"
+            to="/discover"
             className="text-purple-900 font-medium hover:text-yellow-500 transition-colors duration-300 relative group"
           >
-            Opportunities
+            Discover
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300"></span>
           </Link>
 
-          <Link
-            to="/about"
-            className="text-purple-900 font-medium hover:text-yellow-500 transition-colors duration-300 relative group"
-          >
-            About
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300"></span>
-          </Link>
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-3">

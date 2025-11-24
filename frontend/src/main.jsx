@@ -13,7 +13,7 @@ import Auth from "./pages/Auth.jsx";
 import "./index.css";
 
 // TODO: Create these placeholder pages
-// import StudentDashboard from "./pages/StudentDashboard.jsx";
+import StudentDashboard from "./pages/StudentDashboard.jsx";
 // import Stories from "./pages/Stories.jsx";
 // import Organizations from "./pages/Organizations.jsx";
 // import Profile from "./pages/Profile.jsx";
@@ -40,7 +40,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/auth" element={<Auth />} />
 
           {/* Student Routes */}
-          <Route path="/dashboard" element={<div>Student Dashboard - Coming Soon</div>} />
+          <Route path="/dashboard" element={<StudentDashboard />} />
           <Route path="/saved" element={<Saved />} />
           <Route path="/stories" element={<div>Stories Page - Coming Soon</div>} />
           <Route path="/organizations" element={<div>Organizations Page - Coming Soon</div>} />

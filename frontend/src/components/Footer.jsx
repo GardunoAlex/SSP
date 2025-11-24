@@ -23,13 +23,10 @@ const Footer = () => {
           </div>
 
           <div className="flex items-center gap-8 text-sm">
-            <Link to="/about" className="text-slate-300 hover:text-gold transition-colors">
-              About
-            </Link>
             <Link to="/opportunities" className="text-slate-300 hover:text-gold transition-colors">
               Discover
             </Link>
-            <a href="mailto:hello@studentstarter.com" className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
+            <a href="mailto:studentstarter@gmail.com" className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Contact
             </a>

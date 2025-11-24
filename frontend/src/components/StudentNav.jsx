@@ -89,16 +89,16 @@ const StudentNav = () => {
           </Link>
 
           <Link
-            to="/opportunities"
+            to="/discover"
             className={`font-medium transition-colors duration-300 relative group ${
-              isActive("/opportunities")
+              isActive("/discover")
                 ? "text-purple-primary"
                 : "text-purple-dark hover:text-yellow-500"
             }`}
           >
             Discover
             <span className={`absolute bottom-0 left-0 h-0.5 bg-yellow-500 transition-all duration-300 ${
-              isActive("/opportunities") ? "w-full" : "w-0 group-hover:w-full"
+              isActive("/discover") ? "w-full" : "w-0 group-hover:w-full"
             }`}></span>
           </Link>
 

@@ -103,12 +103,6 @@ export default function NewNav() {
               Discover
             </Link>
 
-            <Link
-              to="/about"
-              className="text-gray-700 hover:text-indigo-600 font-medium transition-transform duration-200 hover:scale-105"
-            >
-              About
-            </Link>
 
             {/* Auth Buttons */}
             {isAuthenticated ? (
@@ -181,20 +175,14 @@ export default function NewNav() {
           )}
 
           <Link
-            to="/opportunities"
+            to="/discover"
             onClick={() => setMenuOpen(false)}
             className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
           >
-            Opportunities
+            Discover
           </Link>
 
-          <Link
-            to="/about"
-            onClick={() => setMenuOpen(false)}
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
-          >
-            About
-          </Link>
+        
 
           {isAuthenticated ? (
             <button
