@@ -5,7 +5,7 @@ import PublicNav from "./PublicNav";
 
 const NewNav = () => {
   const { isAuthenticated, user, getAccessTokenSilently } = useAuth0();
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +51,10 @@ const NewNav = () => {
   // Render appropriate nav based on role
   if (isAuthenticated && role === "student") {
     return <StudentNav />;
+  } else if (isAuthenticated && role == "org") {
+    return <StudentNav />;
+  } else {
+    <StudentNav />
   }
 
   // TODO: Add OrgNav for organizations
