@@ -2,7 +2,7 @@ import { Handshake, GraduationCap, Building2 } from "lucide-react";
 
 const WhatWeDo = () => {
   return (
-    <section className="relative py-20 px-8 bg-gradient-to-br from-purple-50 to-cream">
+    <section id="about" className="relative py-20 px-8 bg-gradient-to-br from-purple-50 to-cream">
       <div className="container mx-auto relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-purple-primary mb-4 inline-block relative">

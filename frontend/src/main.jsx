@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import Signup from "./pages/SignUp.jsx";
 import Auth from "./pages/Auth.jsx";
 import "./index.css";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 // TODO: Create these placeholder pages
 import StudentDashboard from "./pages/StudentDashboard.jsx";
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       }}
     >
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />

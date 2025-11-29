@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
