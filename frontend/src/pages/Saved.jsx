@@ -14,8 +14,12 @@ const Saved = () => {
   const [activeTab, setActiveTab] = useState("opportunities");
   const [savedOpportunities, setSavedOpportunities] = useState([]);
   const [savedOrganizations, setSavedOrganizations] = useLocalStorage("savedOrganizations", []);
-  const [, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
+  const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
   const [loading, setLoading] = useState(true);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [orgOpportunities, setOrgOpportunities] = useState([]);
+  const [loadingOrgDetails, setLoadingOrgDetails] = useState(false);
+  const [savingOrgIds, setSavingOrgIds] = useState([]);
 
   // Fetch BOTH on initial load
   useEffect(() => {
@@ -58,6 +62,79 @@ const Saved = () => {
     } catch (error) {
       console.error("Error fetching saved items:", error);
       setLoading(false);
+    }
+  };
+
+  const fetchOrgOpportunities = async (orgId) => {
+    setLoadingOrgDetails(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
+      const data = await response.json();
+      setOrgOpportunities(data);
+      setLoadingOrgDetails(false);
+    } catch (error) {
+      console.error("Error fetching organization opportunities:", error);
+      setOrgOpportunities([]);
+      setLoadingOrgDetails(false);
+    }
+  };
+
+
+  const handleOrgClick = (org) => {
+    setSelectedOrg(org);
+    fetchOrgOpportunities(org.id);
+  };
+
+  const handleToggleSaveOrg = async (org) => {
+    try {
+      // Avoid double-saving
+      if (savingOrgIds.includes(String(org.id))) return;
+      setSavingOrgIds(prev => [...prev, String(org.id)]);
+
+      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      const userId = supaUser?.id;
+      if (!userId) throw new Error('Unable to get user id');
+
+      const alreadySaved = savedOrgIds.includes(String(org.id));
+      
+      if (!alreadySaved) {
+        // Save
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, org_id: org.id }),
+        });
+        if (!res.ok) throw new Error('Failed to save org');
+        
+        setSavedOrgIds(prev => Array.from(new Set([...prev, String(org.id)])));
+        clearCached(`savedOrgs:${userId}`);
+        
+        // Also update the saved organizations list
+        const newOrg = { id: org.id, name: org.name, org_description: org.org_description, website: org.website };
+        setSavedOrganizations(prev => [...prev, newOrg]);
+        
+        window.dispatchEvent(new CustomEvent('savedOrgChanged', { detail: { orgId: org.id, saved: true } }));
+      } else {
+        // Unsave
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, org_id: org.id }),
+        });
+        if (!res.ok) throw new Error('Failed to unsave org');
+        
+        setSavedOrgIds(prev => prev.filter(id => id !== String(org.id)));
+        setSavedOrganizations(prev => prev.filter(o => o.id !== org.id));
+        clearCached(`savedOrgs:${userId}`);
+        
+        window.dispatchEvent(new CustomEvent('savedOrgChanged', { detail: { orgId: org.id, saved: false } }));
+      }
+    } catch (err) {
+      console.error('Saved: toggle saved org failed', err);
+      alert('Failed to update saved organization');
+    } finally {
+      setSavingOrgIds(prev => prev.filter(id => id !== String(org.id)));
     }
   };
 
@@ -242,13 +319,17 @@ const Saved = () => {
                             href={opp.apply_link}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
                           >
                             Apply Now
                           </a>
                         )}
                         <button
-                          onClick={() => handleUnsaveOpportunity(opp.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnsaveOpportunity(opp.id)
+                          }}
                           className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-red-100 hover:text-red-600 transition-colors font-semibold text-sm"
                         >
                           Remove
@@ -275,7 +356,8 @@ const Saved = () => {
                 {savedOrganizations.map((org) => (
                   <div
                     key={org.id}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border-2 border-transparent hover:border-purple-primary"
+                    onClick={() => handleOrgClick(org)}
+                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border-2 border-transparent hover:border-purple-primary cursor-pointer"
                   >
                     <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
                       <span className="text-6xl font-bold text-white">
@@ -303,7 +385,10 @@ const Saved = () => {
                           </a>
                         )}
                         <button
-                          onClick={() => handleUnsaveOrganization(org.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnsaveOrganization(org.id)
+                          }}
                           className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-red-100 hover:text-red-600 transition-colors font-semibold text-sm"
                         >
                           Remove
@@ -317,6 +402,16 @@ const Saved = () => {
           </div>
         )}
       </main>
+      <OrganizationModal
+        selectedOrg={selectedOrg}
+        setSelectedOrg={setSelectedOrg}
+        orgOpportunities={orgOpportunities}
+        loadingOrgDetails={loadingOrgDetails}
+        onToggleSave={handleToggleSaveOrg}
+        isSaved={selectedOrg ? savedOrgIds.includes(String(selectedOrg.id)) : false}
+        isSaving={selectedOrg ? savingOrgIds.includes(String(selectedOrg.id)) : false}
+      />
+
 
       <Footer />
     </div>

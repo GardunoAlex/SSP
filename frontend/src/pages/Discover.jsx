@@ -296,7 +296,7 @@ const Discover = () => {
       </button>
     );
   };
-  // --- END NEW: Pagination Logic ---
+
 
   return (
     <div className="min-h-screen bg-cream">
@@ -605,10 +605,19 @@ const Discover = () => {
                               e.stopPropagation();
                               handleToggleSaveOrg(org);
                             }}
-                            className={`px-4 py-2 text-sm rounded-full transition-colors ${savedOrgIds.includes(String(org.id)) ? "bg-slate-200 text-slate-700 hover:bg-red-100 hover:text-red-600" : "bg-purple-primary text-white hover:bg-gold"}`}
                             disabled={savingOrgIds.includes(String(org.id))}
+                            className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
+                              savedOrgIds.includes(String(org.id))
+                                ? "bg-gold text-white hover:bg-gold/80"
+                                : "bg-purple-primary text-white hover:bg-gold"
+                            } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
-                            {savingOrgIds.includes(String(org.id)) ? "Saving..." : savedOrgIds.includes(String(org.id)) ? "Saved" : "Save"}
+                            {savingOrgIds.includes(String(org.id)) 
+                              ? "Saving..." 
+                              : savedOrgIds.includes(String(org.id)) 
+                                ? "Saved ✓" 
+                                : "Save"
+                            }
                           </button>
                         </div>
                       </div>
@@ -676,6 +685,9 @@ const Discover = () => {
           setSelectedOrg={setSelectedOrg}
           orgOpportunities={orgOpportunities}
           loadingOrgDetails={loadingOrgDetails}
+          onToggleSave={handleToggleSaveOrg}
+          isSaved={selectedOrg ? savedOrgIds.includes(String(selectedOrg.id)) : false}
+          isSaving={selectedOrg ? savingOrgIds.includes(String(selectedOrg.id)) : false}
         />
       </main>
 
