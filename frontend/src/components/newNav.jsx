@@ -53,8 +53,8 @@ const NewNav = () => {
     return <StudentNav />;
   } else if (isAuthenticated && role == "org") {
     return <StudentNav />;
-  } else {
-    <StudentNav />
+  } else if (isAuthenticated && role == "admin"){
+    return <StudentNav />
   }
 
   // TODO: Add OrgNav for organizations

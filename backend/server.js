@@ -9,6 +9,7 @@ import orgRoutes from "./routes/org.js";
 
 import adminRoutes from "./routes/admin.js";
 import studentRoutes from "./routes/students.js";
+import ReviewRoutes from "./routes/reviews.js"
 
 
 dotenv.config();
@@ -45,6 +46,7 @@ app.use("/api/student", jwtCheck, studentRoutes);
 
 // ✅ Public routes
 app.use("/api/opportunities", opportunitiesRoutes);
+app.use("/api/reviews", ReviewRoutes);
 
 // ✅ Protected routes
 app.use("/api/auth", jwtCheck, authRoutes);
