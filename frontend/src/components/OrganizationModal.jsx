@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { clearCached, fetchWithCache } from "../lib/apiCache";
+import { getSupabaseUser } from "../lib/apiHelpers";
 
 const OrganizationModal = ({
   selectedOrg,
@@ -7,6 +11,45 @@ const OrganizationModal = ({
   loadingOrgDetails,
 }) => {
   if (!selectedOrg) return null;
+
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { isAuthenticated, user, loginWithRedirect, getAccessTokenSilently } = useAuth0();
+
+  const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
+  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+
+  useEffect(() => {
+    // If modal is open and user is authenticated, check saved status
+    const checkSaved = async () => {
+      if (!selectedOrg) return;
+      // quick check from localStorage first
+      if (savedOrgIds?.length > 0 && selectedOrg?.id) {
+        const local = savedOrgIds.some(id => String(id) === String(selectedOrg.id));
+        setIsSaved(Boolean(local));
+        if (local) return; // if local storage shows saved, skip network check
+      }
+      if (!user) return;
+      try {
+        const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+        if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+        const userId = supaUser?.id;
+        if (!userId) return;
+        if (!userId) return;
+
+        const key = `savedOrgs:${userId}`;
+        const savedOrgs = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`, {}, 120000);
+        const found = savedOrgs.some((o) => String(o.id) === String(selectedOrg.id));
+        setIsSaved(Boolean(found));
+        // update local storage cache
+        if (found) setSavedOrgIds(prev => Array.from(new Set([...prev, String(selectedOrg.id)])));
+        console.debug("OrganizationModal: initial saved check for", selectedOrg.id, "->", found);
+      } catch (err) {
+        console.error("Failed to check saved status", err);
+      }
+    };
+    checkSaved();
+  }, [user, selectedOrg]);
 
   return (
     <div
@@ -48,10 +91,63 @@ const OrganizationModal = ({
               </div>
 
               <button
-                onClick={() => console.log("Save org:", selectedOrg.id)}
-                className="px-6 py-3 bg-purple-primary text-white rounded-full hover:bg-gold transition-colors font-semibold"
+                onClick={async () => {
+                  if (!isAuthenticated) {
+                    loginWithRedirect();
+                    return;
+                  }
+
+                  if (isSaving) return;
+                  setIsSaving(true);
+
+                  try {
+                    const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+                    if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+                    const userId = supaUser?.id;
+                    if (!userId) throw new Error("Unable to get user id");
+
+                    if (!isSaved) {
+                      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: userId, org_id: selectedOrg.id }),
+                      });
+                      if (!res.ok) {
+                        const text = await res.text();
+                        throw new Error(text || "Failed to save org");
+                      }
+                      setIsSaved(true);
+                      setSavedOrgIds(prev => Array.from(new Set([...prev, String(selectedOrg.id)])));
+                      // clear savedOrgs cache to force re-fetch elsewhere
+                      clearCached(`savedOrgs:${userId}`);
+                      console.debug("OrganizationModal: saved org:", selectedOrg.id);
+                      // Notify other parts of the app to refresh saved orgs (e.g., Saved page)
+                      window.dispatchEvent(new CustomEvent("savedOrgChanged", { detail: { orgId: selectedOrg.id, saved: true } }));
+                    } else {
+                      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: userId, org_id: selectedOrg.id }),
+                      });
+                      if (!res.ok) {
+                        const text = await res.text();
+                        throw new Error(text || "Failed to unsave org");
+                      }
+                      setIsSaved(false);
+                      setSavedOrgIds(prev => prev.filter(id => id !== String(selectedOrg.id)));
+                      clearCached(`savedOrgs:${userId}`);
+                      console.debug("OrganizationModal: unsaved org:", selectedOrg.id);
+                      window.dispatchEvent(new CustomEvent("savedOrgChanged", { detail: { orgId: selectedOrg.id, saved: false } }));
+                    }
+                  } catch (err) {
+                    console.error("Save/Unsave org failed:", err);
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                className={`px-6 py-3 rounded-full transition-colors font-semibold ${isSaved ? "bg-slate-200 text-slate-700 hover:bg-red-100 hover:text-red-600" : "bg-purple-primary text-white hover:bg-gold"}`}
               >
-                Save Organization
+                {isSaved ? "Saved" : isSaving ? "Saving..." : "Save Organization"}
               </button>
             </div>
 

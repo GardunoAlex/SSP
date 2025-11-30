@@ -42,14 +42,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/auth" element={<Auth />} />
 
           {/* Student Routes */}
-          <Route path="/dashboard" element={<StudentDashboard />} />
           <Route path="/saved" element={<Saved />} />
-          <Route path="/stories" element={<div>Stories Page - Coming Soon</div>} />
           <Route path="/organizations" element={<div>Organizations Page - Coming Soon</div>} />
           <Route path="/profile" element={<div>Profile Page - Coming Soon</div>} />
           <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
-          <Route path="/resume" element={<div>Resume Page - Coming Soon</div>} />
-          <Route path="/notifications" element={<div>Notifications Page - Coming Soon</div>} />
 
           {/* Organization Routes */}
           <Route path="/org/dashboard" element={<OrgDashboard />} />

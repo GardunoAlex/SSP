@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { getSupabaseUser } from "../lib/apiHelpers";
 import { CircleX, PencilLine, CircleCheck } from 'lucide-react';
 
 
@@ -15,13 +16,7 @@ export default function Modal( {isOpen, setIsOpen}) {
     useEffect(() => {
         const fetchUserInfo = async () => {
             try{
-                const token = await getAccessTokenSilently();
-                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/student`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                // data is an object -- I think -- that essentially holds the data that you just asked for. 
-                const data = await res.json();
-                const studentData = data[0];
+                        const studentData = await getSupabaseUser(getAccessTokenSilently);
 
                 setStudent(studentData);
 

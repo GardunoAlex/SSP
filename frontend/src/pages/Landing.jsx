@@ -19,7 +19,7 @@ const Landing = () => {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate("/dashboard");
+      navigate("/discover");
     }
   }, [isAuthenticated, isLoading, navigate]);
 

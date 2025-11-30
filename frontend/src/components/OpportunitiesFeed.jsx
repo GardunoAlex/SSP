@@ -10,6 +10,7 @@ import {
   Lock,
 } from "lucide-react";
 import useDebounce from "../hooks/useDebounce";
+import { getSupabaseUser } from "../lib/apiHelpers";
 import { useNavigate } from "react-router-dom";
 
 const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
@@ -26,25 +27,16 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
 
   // ✅ Sync user ONCE after login
   useEffect(() => {
-    const syncUser = async () => {
+    const initUser = async () => {
       if (!isAuthenticated) return;
       try {
-        const token = await getAccessTokenSilently();
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = await res.json();
-        const id = data.data?.[0]?.id;
-        if (id) setUserId(id);
+        const supaUser = await getSupabaseUser(getAccessTokenSilently);
+        if (supaUser?.id) setUserId(supaUser.id);
       } catch (err) {
-        console.error("Error syncing user:", err);
+        console.error('OpportunitiesFeed: failed to get supabase user', err);
       }
     };
-    syncUser();
+    initUser();
   }, [isAuthenticated, getAccessTokenSilently]);
 
   // ✅ Fetch all opportunities
@@ -87,7 +79,6 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
   // ✅ Handle save/unsave with login check
   const handleSave = async (opportunityId) => {
     if (!isAuthenticated) {
-
       const shouldLogin = window.confirm(
         "Please sign in to save opportunities. Would you like to sign in now?"
       );
@@ -96,6 +87,7 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
       }
       return;
     }
+
     if (!userId) {
       console.error("No user ID found in state");
       return;
@@ -105,22 +97,17 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
 
     try {
       if (isAlreadySaved) {
-        await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/saved/${opportunityId}`,
-          {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, opportunity_id: opportunityId }),
+        });
         setSaved(saved.filter((id) => id !== opportunityId));
       } else {
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: userId,
-            opportunity_id: opportunityId,
-          }),
+          body: JSON.stringify({ user_id: userId, opportunity_id: opportunityId }),
         });
         setSaved([...saved, opportunityId]);
       }
