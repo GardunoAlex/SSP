@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { Search, Filter, ChevronDown } from "lucide-react";
 import NewNav from "../components/newNav";
 import Footer from "../components/Footer";
+import OrganizationModal from "../components/OrganizationModal";
 
 const Discover = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,6 +13,9 @@ const Discover = () => {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [orgOpportunities, setOrgOpportunities] = useState([]);
+  const [loadingOrgDetails, setLoadingOrgDetails] = useState(false);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -32,19 +36,42 @@ const Discover = () => {
   const fetchOpportunities = async () => {
     setLoading(true);
     try {
-      // API CALL: Fetch opportunities with filters
-      // const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities?search=${searchQuery}&tab=${activeTab}&filters=${JSON.stringify(filters)}`);
-      // const data = await response.json();
-      // setOpportunities(data);
-      
-      // Placeholder data
-      setOpportunities([]);
+      if (activeTab === "organizations") {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations`);
+        const data = await response.json();
+        setOpportunities(data);
+      } else if (activeTab === "opportunities") {
+        const respone = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities`);
+        const data = await respone.json();
+        setOpportunities(data);
+      }else{
+        setOpportunities([]);
+      }
       setLoading(false);
     } catch (error) {
       console.error("Error fetching opportunities:", error);
       setLoading(false);
     }
   };
+
+  const fetchOrgOpportunities = async (orgId) => {
+    setLoadingOrgDetails(true);;
+    try{
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
+      const data = await response.json();
+      setOrgOpportunities(data);
+      setLoadingOrgDetails(false);
+    } catch (error) {
+      console.error("Error fetching organization opportunities:", error);
+      setOrgOpportunities([]);
+      setLoadingOrgDetails(false);
+    }
+  };
+
+  const handleOrgClick = (org) => {
+    setSelectedOrg(org);
+    fetchOrgOpportunities(org.id);
+  }
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -357,10 +384,11 @@ const Discover = () => {
             </div>
 
             {/* Results Grid */}
+            {/* Results Grid */}
             {loading ? (
               <div className="text-center py-20">
                 <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-purple-dark mt-4">Loading opportunities...</p>
+                <p className="text-purple-dark mt-4">Loading {activeTab}...</p>
               </div>
             ) : opportunities.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl">
@@ -369,21 +397,58 @@ const Discover = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Placeholder cards - API CALL: Map through opportunities data here */}
-                {[1, 2, 3, 4, 5, 6].map((item) => (
-                  <div
-                    key={item}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden"
-                  >
-                    {/* Placeholder image */}
-                    <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
-                    <div className="p-6">
-                      <div className="h-6 bg-slate-200 rounded mb-3"></div>
-                      <div className="h-4 bg-slate-100 rounded mb-2"></div>
-                      <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+                {activeTab === "organizations" ? (
+                  // Organization Cards
+                  opportunities.map((org) => (
+                    <div
+                      key={org.id}
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden cursor-pointer"
+                      onClick={() => handleOrgClick(org)}
+                    >
+                      {/* Org Logo/Image Placeholder */}
+                      <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
+                        <span className="text-6xl font-bold text-white">{org.name?.charAt(0) || "?"}</span>
+                      </div>
+                      
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-purple-dark mb-2">{org.name}</h3>
+                        <p className="text-slate-600 text-sm mb-4 line-clamp-3">
+                          {org.org_description || "No description available"}
+                        </p>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500">
+                            {org.verified ? "✓ Verified" : "Pending"}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // TODO: Add save/unsave logic
+                              console.log("Save org:", org.id);
+                            }}
+                            className="px-4 py-2 bg-purple-primary text-white text-sm rounded-full hover:bg-gold transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  // Opportunity Cards (your existing placeholder or real data)
+                  opportunities.map((opp) => (
+                    <div
+                      key={opp.id}
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden"
+                    >
+                      <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
+                        <p className="text-slate-600 text-sm mb-4 line-clamp-3">{opp.description}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
@@ -409,7 +474,14 @@ const Discover = () => {
               </div>
             )}
           </section>
+          
         </div>
+        <OrganizationModal
+          selectedOrg={selectedOrg}
+          setSelectedOrg={setSelectedOrg}
+          orgOpportunities={orgOpportunities}
+          loadingOrgDetails={loadingOrgDetails}
+        />
       </main>
 
       <Footer />

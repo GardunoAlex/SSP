@@ -21,6 +21,25 @@ router.get("/", async (req, res) => {
     }
 });
 
+
+router.get("/org/:org_id", async (req, res) => {
+  try {
+    const { org_id } = req.params;
+    const { data, error } = await supabase
+      .from("opportunities")
+      .select("*")
+      .eq("org_id", org_id)
+      .eq("status", "active");
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching org opportunities:", err);
+    res.status(500).json({ error: "Failed to fetch opportunities" });
+  }
+});
+
+
 // Get a single opportunity by ID
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
