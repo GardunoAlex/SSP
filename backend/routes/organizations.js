@@ -38,4 +38,43 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Get organization by user_id
+router.get("/user/:user_id", async (req, res) => {
+  const { user_id } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("user_id", user_id);
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching organization by user:", err);
+    res.status(500).json({ error: "Failed to fetch organization" });
+  }
+});
+
+// Update organization
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, org_description, website, email } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from("organizations")
+      .update({ name, org_description, website, email })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error("Error updating organization:", err);
+    res.status(500).json({ error: "Failed to update organization" });
+  }
+});
+
 export default router;

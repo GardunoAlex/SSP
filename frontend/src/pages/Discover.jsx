@@ -23,9 +23,11 @@ const Discover = () => {
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
-    const [savingOrgIds, setSavingOrgIds] = useState([]);
+  const [savingOrgIds, setSavingOrgIds] = useState([]);
   const [orgOpportunities, setOrgOpportunities] = useState([]);
   const [loadingOrgDetails, setLoadingOrgDetails] = useState(false);
+  const [savedOppIds, setSavedOppIds] = useLocalStorage("savedOppIds", []);
+  const [savingOppIds, setSavingOppIds] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -63,6 +65,27 @@ const Discover = () => {
       }
     };
     fetchSavedIds();
+  }, [user]);
+
+  // Fetch saved opportunities IDs for the current user when auth changes
+  useEffect(() => {
+    const fetchSavedOppIds = async () => {
+      if (!user) return;
+      try{
+        const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+        if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+        const userId = supaUser?.id;
+        if (!userId) return setSavedOppIds([]);
+
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`);
+        const data = await res.json();
+        console.log("Fetched saved opps data:", data);
+        setSavedOppIds(data.map((opportunity) => String(opportunity.id)));
+      } catch (err) {
+        console.error("Discover: failed to fetch saved opportunity ids", err);
+      }
+    };
+    fetchSavedOppIds();
   }, [user]);
 
   // Listen for changes from other parts of the app (e.g., modal saves)
@@ -126,7 +149,7 @@ const Discover = () => {
   const fetchOrgOpportunities = async (orgId) => {
     setLoadingOrgDetails(true);
     try {
-      const key = `orgOpps:${orgId}`;
+      const key = `orgOpp:${orgId}`;
       let data;
       try {
         data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
@@ -159,6 +182,51 @@ const Discover = () => {
     // Re-trigger useEffect to fetch and reset page
   };
 
+  const handleToggleSaveOpp = async (e, opp) => {
+    e.stopPropagation();
+    try {
+      if (!isAuthenticated) {
+        loginWithRedirect();
+        return;
+      }
+
+      // avoid double-saving or unsaving
+      if (savingOppIds.includes(String(opp.id))) return;  
+      setSavingOppIds(prev => [...prev, String(opp.id)]);
+
+      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      const userId = supaUser?.id;
+      if (!userId) throw new Error('Unable to get user id');
+      const alreadySaved = savedOppIds.includes(String(opp.id));
+      if (!alreadySaved) {
+        //Save
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+        });
+        if (!res.ok) throw new Error('Failed to save opportunity');
+        setSavedOppIds(prev => Array.from(new Set([...prev, String(opp.id)])));
+        clearCached(`saved:${userId}`);
+      } else {
+        //Unsave
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+        });
+        if (!res.ok) throw new Error('Failed to unsave opportunity');
+        setSavedOppIds(prev => prev.filter(id => id !== String(opp.id)));
+        clearCached(`saved:${userId}`);
+      }
+    } catch (err) {
+      console.error('Discover: toggle saved opportunity failed', err);
+      alert('Failed to update saved opportunity. Please try again.');
+    } finally {
+      setSavingOppIds(prev => prev.filter(id => id !== String(opp.id)));
+    }
+  };
   const handleToggleSaveOrg = async (org) => {
     try {
       if (!isAuthenticated) {
@@ -579,7 +647,7 @@ const Discover = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {activeTab === "organizations" ? (
                   // Organization Cards
-                  currentCards.map((org) => ( // Changed from opportunities to currentCards
+                  currentCards.map((org) => (
                     <div
                       key={org.id}
                       className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden cursor-pointer"
@@ -625,7 +693,7 @@ const Discover = () => {
                   ))
                 ) : (
                   // Opportunity Cards
-                  currentCards.map((opp) => ( // Changed from opportunities to currentCards
+                  currentCards.map((opp) => (
                     <div
                       key={opp.id}
                       className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden"
@@ -634,6 +702,48 @@ const Discover = () => {
                       <div className="p-6">
                         <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
                         <p className="text-slate-600 text-sm mb-4 line-clamp-3">{opp.description}</p>
+                        
+                        {opp.majors?.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {opp.majors.slice(0, 2).map((major, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                              >
+                                {major}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          {opp.apply_link && (
+                            <a
+                              href={opp.apply_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                            >
+                              Apply Now
+                            </a>
+                          )}
+                          <button
+                            onClick={(e) => handleToggleSaveOpp(e, opp)}
+                            disabled={savingOppIds.includes(String(opp.id))}
+                            className={`px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
+                              savedOppIds.includes(String(opp.id))
+                                ? "bg-gold text-white hover:bg-gold/80"
+                                : "bg-slate-200 text-slate-700 hover:bg-purple-100"
+                            } ${savingOppIds.includes(String(opp.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {savingOppIds.includes(String(opp.id)) 
+                              ? "..." 
+                              : savedOppIds.includes(String(opp.id)) 
+                                ? "Saved ✓" 
+                                : "Save"
+                            }
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))

@@ -1,165 +1,385 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import NewNav from "../components/newNav.jsx";
+import { Building2, Plus, Edit, Trash2, Eye } from "lucide-react";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { getSupabaseUser } from "../lib/apiHelpers";
+import { fetchWithCache, clearCached } from "../lib/apiCache";
+import OrgNav from "../components/OrgNav";
+import Footer from "../components/Footer";
 
-export default function OrgDashboard() {
-  const { isAuthenticated, getAccessTokenSilently, user } = useAuth0();
+const OrgDashboard = () => {
+  const { user, getAccessTokenSilently } = useAuth0();
+  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [organization, setOrganization] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    gpa_requirement: "",
-    link: "",
-    majors: "",
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("profile"); // profile, opportunities
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    org_description: "",
+    website: "",
+    email: "",
   });
 
-  console.log("Auth0 user object:", user);
-
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (user) {
+      fetchOrgData();
+    }
+  }, [user]);
 
-    const fetchOpportunities = async () => {
-      try {
-        const token = await getAccessTokenSilently();
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/org/opportunities`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-
-        // ✅ Only keep active opportunities
-        const activeOpportunities = data.filter((opp) => opp.status === "active");
-        setOpportunities(activeOpportunities);
-      } catch (err) {
-        console.error("Error fetching org opportunities:", err);
-      }
-    };
-
-    fetchOpportunities();
-  }, [isAuthenticated, getAccessTokenSilently]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const fetchOrgData = async () => {
+    setLoading(true);
     try {
-      const token = await getAccessTokenSilently();
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/org/opportunities`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      setOpportunities([...opportunities, data[0]]);
-      setForm({ title: "", description: "", gpa_requirement: "", link: "", majors: "" });
-    } catch (err) {
-      console.error("Error creating opportunity:", err);
+      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      const userId = supaUser?.id;
+      if (!userId) throw new Error('Could not resolve user id');
+
+      // Fetch organization profile
+      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+      const orgData = await orgRes.json();
+      
+      if (orgData && orgData.length > 0) {
+        setOrganization(orgData[0]);
+        setProfileForm({
+          name: orgData[0].name || "",
+          org_description: orgData[0].org_description || "",
+          website: orgData[0].website || "",
+          email: orgData[0].email || "",
+        });
+
+        // Fetch organization's opportunities
+        const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgData[0].id}`);
+        const oppsData = await oppsRes.json();
+        setOpportunities(oppsData);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching org data:", error);
+      setLoading(false);
     }
   };
 
-  // ✅ Role & Auth checks happen before render
-  if (!isAuthenticated) {
-    return <p className="text-center mt-20 text-gray-600">Please log in.</p>;
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${organization.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileForm),
+      });
+
+      if (!res.ok) throw new Error("Failed to update profile");
+
+      const updated = await res.json();
+      setOrganization(updated);
+      setEditingProfile(false);
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile");
+    }
+  };
+
+  const handleDeleteOpportunity = async (oppId) => {
+    if (!confirm("Are you sure you want to delete this opportunity?")) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/${oppId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete opportunity");
+
+      setOpportunities(prev => prev.filter(opp => opp.id !== oppId));
+      alert("Opportunity deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting opportunity:", error);
+      alert("Failed to delete opportunity");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <OrgNav />
+        <div className="text-center py-20">
+          <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-purple-dark mt-4">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (user && user["https://studentstarter.com/role"] !== "org") {
-    return <p className="text-center mt-20 text-gray-600">Access denied. Organization accounts only.</p>;
+  if (!organization) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <OrgNav />
+        <div className="max-w-4xl mx-auto px-6 py-20 pt-32 text-center">
+          <Building2 size={64} className="mx-auto text-slate-300 mb-4" />
+          <h1 className="text-3xl font-bold text-purple-dark mb-4">No Organization Found</h1>
+          <p className="text-slate-600 mb-6">
+            You don't have an organization profile yet. Please contact support to set up your organization.
+          </p>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
-  // ✅ Main render
   return (
-    <>
-        <NewNav />
-        <div className="max-w-5xl mx-auto mt-20 p-6">
-            <h1 className="text-3xl font-bold text-indigo-600 mb-6">Organization Dashboard</h1>
+    <div className="min-h-screen bg-cream">
+      <OrgNav />
 
-            {/* Opportunity form */}
-            <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow-sm">
-                <input
-                type="text"
-                placeholder="Opportunity Title"
-                className="w-full border p-2 rounded"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                required
-                />
-                <textarea
-                placeholder="Description"
-                className="w-full border p-2 rounded"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                required
-                />
-                <input
-                type="number"
-                placeholder="GPA Requirement"
-                className="w-full border p-2 rounded"
-                value={form.gpa_requirement}
-                onChange={(e) => setForm({ ...form, gpa_requirement: e.target.value })}
-                />
-                <input
-                type="text"
-                placeholder="Majors (comma separated)"
-                className="w-full border p-2 rounded"
-                value={form.majors}
-                onChange={(e) => setForm({ ...form, majors: e.target.value })}
-                />
-                <input
-                type="url"
-                placeholder="Application Link"
-                className="w-full border p-2 rounded"
-                value={form.link}
-                onChange={(e) => setForm({ ...form, link: e.target.value })}
-                />
-
-                <button className="bg-indigo-500 text-white px-6 py-2 rounded-lg hover:bg-indigo-600 transition">
-                Create Opportunity
-                </button>
-            </form>
-
-            {/* Opportunities list */}
-            <div className="mt-10">
-                <h2 className="text-xl font-semibold mb-4 text-gray-700">Your Opportunities</h2>
-                {opportunities.length === 0 ? (
-                <p className="text-gray-500">You haven’t posted any opportunities yet.</p>
-                ) : (
-                <ul className="space-y-3">
-                    {opportunities.map((opp) => (
-                    <li
-                        key={opp.id}
-                        className="bg-white p-4 rounded-lg shadow-sm flex justify-between items-center border"
-                    >
-                        <div>
-                        <h3 className="text-lg font-semibold">{opp.title}</h3>
-                        <p className="text-gray-600 text-sm">{opp.description}</p>
-                        </div>
-                        <button
-                        className="text-red-500 hover:text-red-700"
-                        onClick={async () => {
-                            try {
-                            const token = await getAccessTokenSilently();
-                            await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/org/opportunities/${opp.id}`, {
-                                method: "DELETE", // backend updates status
-                                headers: { Authorization: `Bearer ${token}` },
-                            });
-
-                            // instantly update UI
-                            setOpportunities((prev) => prev.filter((o) => o.id !== opp.id));
-                            } catch (err) {
-                            console.error("Error closing opportunity:", err);
-                            }
-                        }}
-                        >
-                        Close
-                        </button>
-                    </li>
-                    ))}
-                </ul>
-                )}
+      <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
+        {/* Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-200 to-gold/30 rounded-2xl flex items-center justify-center">
+              <span className="text-3xl font-bold text-white">
+                {organization.name?.charAt(0) || "?"}
+              </span>
             </div>
-            </div>  
-    
-    </>
-    
+            <div>
+              <h1 className="text-4xl font-bold text-purple-dark">{organization.name}</h1>
+              <p className="text-slate-600">Organization Dashboard</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab("profile")}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === "profile"
+                ? "text-purple-primary border-b-2 border-purple-primary"
+                : "text-slate-600 hover:text-purple-primary"
+            }`}
+          >
+            Profile
+          </button>
+          <button
+            onClick={() => setActiveTab("opportunities")}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === "opportunities"
+                ? "text-purple-primary border-b-2 border-purple-primary"
+                : "text-slate-600 hover:text-purple-primary"
+            }`}
+          >
+            Opportunities ({opportunities.length})
+          </button>
+        </div>
+
+        {/* Content */}
+        {activeTab === "profile" ? (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-purple-dark">Organization Profile</h2>
+              {!editingProfile && (
+                <button
+                  onClick={() => setEditingProfile(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors"
+                >
+                  <Edit size={16} />
+                  Edit Profile
+                </button>
+              )}
+            </div>
+
+            {editingProfile ? (
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-purple-dark mb-2">
+                    Organization Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-purple-dark mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={profileForm.org_description}
+                    onChange={(e) => setProfileForm({ ...profileForm, org_description: e.target.value })}
+                    rows={4}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-purple-dark mb-2">
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    value={profileForm.website}
+                    onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-purple-dark mb-2">
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProfile(false);
+                      setProfileForm({
+                        name: organization.name || "",
+                        org_description: organization.org_description || "",
+                        website: organization.website || "",
+                        email: organization.email || "",
+                      });
+                    }}
+                    className="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-500 mb-1">Description</h3>
+                  <p className="text-slate-700">{organization.org_description || "No description"}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-500 mb-1">Website</h3>
+                  {organization.website ? (
+                    <a
+                      href={organization.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-primary hover:underline"
+                    >
+                      {organization.website}
+                    </a>
+                  ) : (
+                    <p className="text-slate-400">No website</p>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-500 mb-1">Contact Email</h3>
+                  <p className="text-slate-700">{organization.email || "No email"}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-500 mb-1">Status</h3>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                    organization.verified 
+                      ? "bg-green-100 text-green-700" 
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {organization.verified ? "✓ Verified" : "Pending Verification"}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-purple-dark">Your Opportunities</h2>
+              <button
+                onClick={() => window.location.href = "/org/create-opportunity"}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+              >
+                <Plus size={16} />
+                Create New Opportunity
+              </button>
+            </div>
+
+            {opportunities.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center">
+                <Building2 size={64} className="mx-auto text-slate-300 mb-4" />
+                <h3 className="text-xl font-bold text-slate-600 mb-2">No Opportunities Yet</h3>
+                <p className="text-slate-500 mb-6">Create your first opportunity to get started</p>
+                <button
+                  onClick={() => window.location.href = "/org/create-opportunity"}
+                  className="px-6 py-3 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+                >
+                  Create Opportunity
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {opportunities.map((opp) => (
+                  <div
+                    key={opp.id}
+                    className="bg-white rounded-2xl shadow-lg p-6 border-2 border-transparent hover:border-purple-primary transition-all"
+                  >
+                    <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
+                    <p className="text-slate-600 text-sm mb-4 line-clamp-2">{opp.description}</p>
+
+                    {opp.majors?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {opp.majors.slice(0, 3).map((major, idx) => (
+                          <span
+                            key={idx}
+                            className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                          >
+                            {major}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => window.location.href = `/org/edit-opportunity/${opp.id}`}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                      >
+                        <Edit size={16} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOpportunity(opp.id)}
+                        className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors font-semibold text-sm"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      <Footer />
+    </div>
   );
-}
+};
+
+export default OrgDashboard;

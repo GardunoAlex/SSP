@@ -149,12 +149,14 @@ const Saved = () => {
         forceRefresh
       );
       console.debug("Saved.jsx: fetched saved opportunities count", data.length);
+      console.debug("Saved.jsx: first opportunity:", data[0]);
       return data;
     } catch (err) {
       console.error('Saved.jsx: fetch saved ops failed cache, retrying', err);
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`);
       const data = await response.json();
       console.debug("Saved.jsx: fetched saved opportunities count (no cache)", data.length);
+      console.debug("Saved.jsx: first opportunity (no cache):", data[0])
       return data;
     }
   };
