@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { getSupabaseUser } from "../lib/apiHelpers";
+import { clearCached } from "../lib/apiCache";
 import NewNav from "../components/newNav";
 import Footer from "../components/Footer";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -10,10 +13,14 @@ import { MessageSquarePlus } from 'lucide-react';
 
 export default function OpportunityDetails() {
   const { id } = useParams();
-  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
+  const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
+  
   const [opportunity, setOpportunity] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [savedOppIds, setSavedOppIds] = useLocalStorage("savedOppIds", []);
+  const [isSaving, setIsSaving] = useState(false);
   const [addReview, setAddReview] = useState(false);
   const [hover, setHover] = useState(0);
   const [userId, setUserId] = useState(null);
@@ -66,6 +73,71 @@ export default function OpportunityDetails() {
     fetchOpportunity();
   }, [id]);
 
+  // Fetch saved opp IDs if user is logged in
+  useEffect(() => {
+    const fetchSavedOppIds = async () => {
+      if (!user) return;
+      try {
+        const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+        if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+        const userId = supaUser?.id;
+        if (!userId) return;
+        
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`);
+        const data = await res.json();
+        setSavedOppIds(data.map((o) => String(o.id)));
+      } catch (err) {
+        console.error("Failed to fetch saved opp ids", err);
+      }
+    };
+    fetchSavedOppIds();
+  }, [user]);
+
+  const handleToggleSave = async () => {
+    if (!isAuthenticated) {
+      loginWithRedirect();
+      return;
+    }
+
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      const userId = supaUser?.id;
+      if (!userId) throw new Error('Unable to get user id');
+
+      const alreadySaved = savedOppIds.includes(String(id));
+      
+      if (!alreadySaved) {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, opportunity_id: id }),
+        });
+        if (!res.ok) throw new Error('Failed to save opportunity');
+        setSavedOppIds(prev => Array.from(new Set([...prev, String(id)])));
+        clearCached(`savedOps:${userId}`);
+      } else {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, opportunity_id: id }),
+        });
+        if (!res.ok) throw new Error('Failed to unsave opportunity');
+        setSavedOppIds(prev => prev.filter(oppId => oppId !== String(id)));
+        clearCached(`savedOps:${userId}`);
+      }
+    } catch (err) {
+      console.error('Toggle save failed', err);
+      alert('Failed to update saved opportunity');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isSaved = savedOppIds.includes(String(id));
 
   const fetchReviews = async () => {
     try {
@@ -156,15 +228,31 @@ export default function OpportunityDetails() {
           Back
         </button>
 
-        <div className="group relative bg-white rounded-2xl shadow-lg p-6">
-          <h1 className="text-3xl font-bold text-purple-dark mb-3">
-            {opportunity.title}
-          </h1>
-          <p className="text-slate-700 text-lg mb-6 text-purple-dark">
-            {opportunity.description}
-          </p>
+        <div className="bg-white rounded-2xl shadow-sm border border-purple-100 p-8">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-purple-primary mb-3">
+                {opportunity.title}
+              </h1>
+              <p className="text-slate-700 text-lg">
+                {opportunity.description}
+              </p>
+            </div>
+            
+            <button
+              onClick={handleToggleSave}
+              disabled={isSaving}
+              className={`px-6 py-3 rounded-full font-semibold transition-colors whitespace-nowrap ${
+                isSaved
+                  ? "bg-gold text-white hover:bg-gold/80"
+                  : "bg-purple-primary text-white hover:bg-gold"
+              } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {isSaving ? "Saving..." : isSaved ? "Saved ✓" : "Save"}
+            </button>
+          </div>
 
-          <div className="space-y-3 text-sm text-slate-600">
+          <div className="space-y-3 text-sm text-slate-600 mb-6">
             <p>
               <span className="font-semibold text-purple-dark">
                 GPA Requirement:
@@ -179,6 +267,14 @@ export default function OpportunityDetails() {
                 {opportunity.majors.join(", ")}
               </p>
             )}
+            {opportunity.location && (
+              <p>
+                <span className="font-semibold text-purple-primary">
+                  Location:
+                </span>{" "}
+                {opportunity.location}
+              </p>
+            )}
             <p>
               <span className="font-semibold text-purple-dark">
                 Posted On:
@@ -191,7 +287,7 @@ export default function OpportunityDetails() {
             href={opportunity.apply_link}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-8 bg-purple-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-gold transition"
+            className="inline-block bg-purple-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-gold transition"
           >
             Apply Now
           </a>
@@ -286,6 +382,7 @@ export default function OpportunityDetails() {
         </div>
       </div>
 
+      <Footer />
     </div>
 
   );

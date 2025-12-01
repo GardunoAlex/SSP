@@ -6,22 +6,35 @@ const router = express.Router();
 
 // Helper: Get the Supabase org ID from Auth0 token
 async function getSupabaseStudentId(token) {
-  // 1️⃣ Get user info from Auth0
-  const userRes = await fetch("https://dev-hdl1kw87a8apz4ni.us.auth0.com/userinfo", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  //  have to check if the user check was successful or not. 
-  if(!userRes.ok){
-    throw new Error("Supabase student not found");
+  // Try to decode sub from token first (avoid rate-limited userinfo calls)
+  let sub = null;
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
+    sub = decoded?.sub;
+  } catch (err) {
+    // Not a JWT, will fall back to userinfo
   }
-  const user = await userRes.json();
+
+  let user;
+  if (!sub) {
+    // 1️⃣ Fall back to userinfo if sub not available in token
+    const userRes = await fetch("https://dev-hdl1kw87a8apz4ni.us.auth0.com/userinfo", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!userRes.ok) {
+      const text = await userRes.text();
+      throw new Error(`Failed to fetch Auth0 userinfo: ${text}`);
+    }
+    user = await userRes.json();
+    sub = user?.sub;
+  }
 
   // 2️⃣ Find matching user in Supabase
   const { data, error } = await supabase
     .from("users")
     .select("id")
-    .eq("auth_id", user.sub)
+    .eq("auth_id", sub)
     .maybeSingle();
 
   if (error || !data) throw new Error("Supabase student not found");

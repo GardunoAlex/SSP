@@ -1,10 +1,17 @@
 // pages/Discover.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Filter, ChevronDown } from "lucide-react";
+import { Search, Filter, ChevronDown, ArrowLeft, ArrowRight } from "lucide-react";
 import NewNav from "../components/newNav";
+import apiCache, { fetchWithCache, clearCached } from "../lib/apiCache";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { getSupabaseUser } from "../lib/apiHelpers";
+import { useAuth0 } from "@auth0/auth0-react";
 import Footer from "../components/Footer";
+import OrganizationModal from "../components/OrganizationModal";
 
+const CARDS_PER_PAGE = 15;
+const MAX_VISIBLE_PAGES = 5;
 const Discover = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
@@ -12,8 +19,19 @@ const Discover = () => {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
+  const [savingOrgIds, setSavingOrgIds] = useState([]);
+  const [orgOpportunities, setOrgOpportunities] = useState([]);
+  const [loadingOrgDetails, setLoadingOrgDetails] = useState(false);
+  const [savedOppIds, setSavedOppIds] = useLocalStorage("savedOppIds", []);
+  const [savingOppIds, setSavingOppIds] = useState([]);
 
-  // Filter states
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filter states (existing)
   const [filters, setFilters] = useState({
     classYear: [],
     gpa: "",
@@ -24,27 +42,135 @@ const Discover = () => {
     compensation: "",
   });
 
-  // Fetch opportunities on mount and when filters change
+  // Reset page whenever activeTab, filters, or searchQuery changes
   useEffect(() => {
+    setCurrentPage(1);
     fetchOpportunities();
   }, [activeTab, filters, searchQuery]);
+
+  // Fetch saved organizations IDs for the current user when auth changes
+  useEffect(() => {
+    const fetchSavedIds = async () => {
+      if (!user) return;
+      try {
+        const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+        if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+        const userId = supaUser?.id;
+        if (!userId) return setSavedOrgIds([]);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`);
+        const data = await res.json();
+        setSavedOrgIds(data.map((o) => String(o.id)));
+      } catch (err) {
+        console.error("Discover: failed to fetch saved org ids", err);
+      }
+    };
+    fetchSavedIds();
+  }, [user]);
+
+  // Fetch saved opportunities IDs for the current user when auth changes
+  useEffect(() => {
+    const fetchSavedOppIds = async () => {
+      if (!user) return;
+      try{
+        const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+        if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+        const userId = supaUser?.id;
+        if (!userId) return setSavedOppIds([]);
+
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`);
+        const data = await res.json();
+        console.log("Fetched saved opps data:", data);
+        setSavedOppIds(data.map((opportunity) => String(opportunity.id)));
+      } catch (err) {
+        console.error("Discover: failed to fetch saved opportunity ids", err);
+      }
+    };
+    fetchSavedOppIds();
+  }, [user]);
+
+  // Listen for changes from other parts of the app (e.g., modal saves)
+  useEffect(() => {
+    const listener = (e) => {
+      console.debug("Discover: savedOrgChanged", e?.detail);
+      // re-fetch saved ids so cards reflect changes
+      if (user) {
+        (async () => {
+          try {
+            const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+            if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+            const userId = supaUser?.id;
+            if (!userId) return setSavedOrgIds([]);
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`);
+            const data = await res.json();
+            setSavedOrgIds(data.map((o) => String(o.id)));
+          } catch (err) {
+            console.error("Discover: failed to refresh saved org ids", err);
+          }
+        })();
+      }
+    };
+    window.addEventListener("savedOrgChanged", listener);
+    return () => window.removeEventListener("savedOrgChanged", listener);
+  }, [user]);
 
   const fetchOpportunities = async () => {
     setLoading(true);
     try {
-      // API CALL: Fetch opportunities with filters
-      // const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities?search=${searchQuery}&tab=${activeTab}&filters=${JSON.stringify(filters)}`);
-      // const data = await response.json();
-      // setOpportunities(data);
-      
-      // Placeholder data
-      setOpportunities([]);
+      let data = [];
+      if (activeTab === "organizations") {
+        // try cached orgs key
+        const key = `organizations`; 
+        try {
+          data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/organizations`);
+        } catch (err) {
+          console.error('Discover: failed to fetch organizations', err);
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations`);
+          data = await response.json();
+        }
+      } else if (activeTab === "opportunities") {
+        const key = `opportunities:${JSON.stringify(filters)}`;
+        try {
+          data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/opportunities`);
+        } catch (err) {
+          console.error('Discover: failed to fetch opportunities', err);
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities`);
+          data = await response.json();
+        }
+      }
+      // You would typically apply client-side filtering here if not done on the server
+      setOpportunities(data);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching opportunities:", error);
       setLoading(false);
     }
   };
+
+  const fetchOrgOpportunities = async (orgId) => {
+    setLoadingOrgDetails(true);
+    try {
+      const key = `orgOpp:${orgId}`;
+      let data;
+      try {
+        data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
+      } catch (err) {
+        console.error('Discover: fetch org opps cache failed', err);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
+        data = await response.json();
+      }
+      setOrgOpportunities(data);
+      setLoadingOrgDetails(false);
+    } catch (error) {
+      console.error("Error fetching organization opportunities:", error);
+      setOrgOpportunities([]);
+      setLoadingOrgDetails(false);
+    }
+  };
+
+  const handleOrgClick = (org) => {
+    setSelectedOrg(org);
+    fetchOrgOpportunities(org.id);
+  }
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -53,7 +179,98 @@ const Discover = () => {
     } else {
       setSearchParams({});
     }
-    fetchOpportunities();
+    // Re-trigger useEffect to fetch and reset page
+  };
+
+  const handleToggleSaveOpp = async (e, opp) => {
+    e.stopPropagation();
+    try {
+      if (!isAuthenticated) {
+        loginWithRedirect();
+        return;
+      }
+
+      // avoid double-saving or unsaving
+      if (savingOppIds.includes(String(opp.id))) return;  
+      setSavingOppIds(prev => [...prev, String(opp.id)]);
+
+      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      const userId = supaUser?.id;
+      if (!userId) throw new Error('Unable to get user id');
+      const alreadySaved = savedOppIds.includes(String(opp.id));
+      if (!alreadySaved) {
+        //Save
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+        });
+        if (!res.ok) throw new Error('Failed to save opportunity');
+        setSavedOppIds(prev => Array.from(new Set([...prev, String(opp.id)])));
+        clearCached(`saved:${userId}`);
+      } else {
+        //Unsave
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+        });
+        if (!res.ok) throw new Error('Failed to unsave opportunity');
+        setSavedOppIds(prev => prev.filter(id => id !== String(opp.id)));
+        clearCached(`saved:${userId}`);
+      }
+    } catch (err) {
+      console.error('Discover: toggle saved opportunity failed', err);
+      alert('Failed to update saved opportunity. Please try again.');
+    } finally {
+      setSavingOppIds(prev => prev.filter(id => id !== String(opp.id)));
+    }
+  };
+  const handleToggleSaveOrg = async (org) => {
+    try {
+      if (!isAuthenticated) {
+        loginWithRedirect();
+        return;
+      }
+
+      // avoid double-saving or unsaving
+      if (savingOrgIds.includes(String(org.id))) return;
+      setSavingOrgIds(prev => [...prev, String(org.id)]);
+
+      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      const userId = supaUser?.id;
+      if (!userId) throw new Error('Unable to get user id');
+      if (!userId) throw new Error('Unable to get user id');
+
+      const alreadySaved = savedOrgIds.includes(String(org.id));
+      if (!alreadySaved) {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, org_id: org.id }),
+        });
+        if (!res.ok) throw new Error('Failed to save org');
+        setSavedOrgIds(prev => Array.from(new Set([...prev, String(org.id)])));
+        clearCached(`savedOrgs:${userId}`);
+        window.dispatchEvent(new CustomEvent('savedOrgChanged', { detail: { orgId: org.id, saved: true } }));
+      } else {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, org_id: org.id }),
+        });
+        if (!res.ok) throw new Error('Failed to unsave org');
+        setSavedOrgIds(prev => prev.filter(id => id !== String(org.id)));
+        clearCached(`savedOrgs:${userId}`);
+        window.dispatchEvent(new CustomEvent('savedOrgChanged', { detail: { orgId: org.id, saved: false } }));
+      }
+    } catch (err) {
+      console.error('Discover: toggle saved org failed', err);
+    } finally {
+      setSavingOrgIds(prev => prev.filter(id => id !== String(org.id)));
+    }
   };
 
   const handleFilterChange = (category, value) => {
@@ -77,12 +294,82 @@ const Discover = () => {
     });
   };
 
+  const totalPages = Math.ceil(opportunities.length / CARDS_PER_PAGE);
+
+  const currentCards = useMemo(() => {
+    const startIndex = (currentPage - 1) * CARDS_PER_PAGE;
+    const endIndex = startIndex + CARDS_PER_PAGE;
+    return opportunities.slice(startIndex, endIndex);
+  }, [opportunities, currentPage]);
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      document.getElementById('content-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const getVisiblePages = () => {
+    if (totalPages <= MAX_VISIBLE_PAGES) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = [];
+    const startPage = Math.max(2, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2) + 1);
+    const endPage = Math.min(totalPages - 1, startPage + MAX_VISIBLE_PAGES - 3);
+
+    pages.push(1); // Always show first page
+
+    if (startPage > 2) {
+      pages.push('...'); 
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    if (endPage < totalPages - 1) {
+      pages.push('...'); // Right ellipsis
+    }
+
+    if (!pages.includes(totalPages)) {
+      pages.push(totalPages); // Always show last page
+    }
+
+    // Filter out duplicate ellipses and adjacent page numbers/ellipses
+    return pages.filter((page, index, array) => {
+        if (page === '...' && (array[index - 1] === '...' || array[index + 1] === '...')) {
+            return false;
+        }
+        return true;
+    });
+  };
+  
+  const visiblePages = getVisiblePages();
+
+  const PageButton = ({ pageNumber, isActive, onClick, isEllipsis }) => {
+    if (isEllipsis) {
+      return <span className="px-2 py-2 text-slate-400">...</span>;
+    }
+    return (
+      <button
+        onClick={onClick}
+        className={`px-4 py-2 border rounded-lg font-semibold transition-colors min-w-[40px] ${
+          isActive
+            ? "bg-purple-primary text-white border-purple-primary"
+            : "bg-white text-purple-dark border-slate-300 hover:bg-purple-50"
+        }`}
+      >
+        {pageNumber}
+      </button>
+    );
+  };
+
+
   return (
     <div className="min-h-screen bg-cream">
       <NewNav/>
-
-      {/* Hero/Search Section */}
-      <section className="relative  py-20 px-8 bg-gradient-to-br from-purple-50 to-cream overflow-hidden">
+      <section className="relative pt-32 pb-20 px-8 bg-gradient-to-br from-purple-50 to-cream overflow-hidden">
         {/* Background pattern */}
         <div
           className="absolute inset-0 opacity-5 pointer-events-none"
@@ -107,7 +394,7 @@ const Discover = () => {
             <div className="relative max-w-3xl mx-auto">
               <input
                 type="text"
-                placeholder="Search for internships, fellowships, organizations, or a specific major..."
+                placeholder="Search for opportunities, organizations, or a specific major..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-6 py-4 pr-14 text-lg border-2 border-transparent focus:border-purple-primary bg-white rounded-full shadow-lg focus:shadow-xl transition-all outline-none"
@@ -134,16 +421,6 @@ const Discover = () => {
               Opportunities
             </button>
             <button
-              onClick={() => setActiveTab("events")}
-              className={`flex-1 px-6 py-3 rounded-full font-semibold text-base transition-all ${
-                activeTab === "events"
-                  ? "bg-purple-primary text-white shadow-lg"
-                  : "bg-white text-purple-dark hover:bg-purple-50"
-              }`}
-            >
-              Events
-            </button>
-            <button
               onClick={() => setActiveTab("organizations")}
               className={`flex-1 px-6 py-3 rounded-full font-semibold text-base transition-all ${
                 activeTab === "organizations"
@@ -160,7 +437,7 @@ const Discover = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex gap-8">
-          {/* Sidebar Filters */}
+          {/* Sidebar Filters (UNCHANGED) */}
           <aside className="w-1/4 hidden lg:block">
             <div className="sticky top-32">
               <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -326,7 +603,7 @@ const Discover = () => {
             </div>
           </aside>
 
-          {/* Mobile Filter Button */}
+          {/* Mobile Filter Button (UNCHANGED) */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="lg:hidden fixed bottom-6 right-6 z-40 bg-purple-primary text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2"
@@ -336,16 +613,15 @@ const Discover = () => {
           </button>
 
           {/* Content Grid */}
-          <section className="flex-1">
+          <section id="content-start" className="flex-1">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-bold text-purple-dark">
                   {activeTab === "opportunities" && "Featured Opportunities"}
-                  {activeTab === "events" && "Upcoming Events"}
                   {activeTab === "organizations" && "Partner Organizations"}
                 </h3>
                 <p className="text-slate-600 mt-1">
-                  {loading ? "Loading..." : `${opportunities.length} results found`}
+                  {loading ? "Loading..." : `${opportunities.length} total results found, showing ${currentCards.length} per page`}
                 </p>
               </div>
               <select className="px-4 py-2 border border-slate-300 rounded-full text-sm font-medium focus:outline-none focus:border-purple-primary">
@@ -360,7 +636,7 @@ const Discover = () => {
             {loading ? (
               <div className="text-center py-20">
                 <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-purple-dark mt-4">Loading opportunities...</p>
+                <p className="text-purple-dark mt-4">Loading {activeTab}...</p>
               </div>
             ) : opportunities.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl">
@@ -369,47 +645,160 @@ const Discover = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Placeholder cards - API CALL: Map through opportunities data here */}
-                {[1, 2, 3, 4, 5, 6].map((item) => (
-                  <div
-                    key={item}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden"
-                  >
-                    {/* Placeholder image */}
-                    <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
-                    <div className="p-6">
-                      <div className="h-6 bg-slate-200 rounded mb-3"></div>
-                      <div className="h-4 bg-slate-100 rounded mb-2"></div>
-                      <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+                {activeTab === "organizations" ? (
+                  // Organization Cards
+                  currentCards.map((org) => (
+                    <div
+                      key={org.id}
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden cursor-pointer"
+                      onClick={() => handleOrgClick(org)}
+                    >
+                      {/* Org Logo/Image Placeholder */}
+                      <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
+                        <span className="text-6xl font-bold text-white">{org.name?.charAt(0) || "?"}</span>
+                      </div>
+                      
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-purple-dark mb-2">{org.name}</h3>
+                        <p className="text-slate-600 text-sm mb-4 line-clamp-3">
+                          {org.org_description || "No description available"}
+                        </p>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500">
+                            {org.verified ? "✓ Verified" : "Pending"}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleSaveOrg(org);
+                            }}
+                            disabled={savingOrgIds.includes(String(org.id))}
+                            className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
+                              savedOrgIds.includes(String(org.id))
+                                ? "bg-gold text-white hover:bg-gold/80"
+                                : "bg-purple-primary text-white hover:bg-gold"
+                            } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {savingOrgIds.includes(String(org.id)) 
+                              ? "Saving..." 
+                              : savedOrgIds.includes(String(org.id)) 
+                                ? "Saved ✓" 
+                                : "Save"
+                            }
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  // Opportunity Cards
+                  currentCards.map((opp) => (
+                    <div
+                      key={opp.id}
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden"
+                    >
+                      <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
+                        <p className="text-slate-600 text-sm mb-4 line-clamp-3">{opp.description}</p>
+                        
+                        {opp.majors?.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {opp.majors.slice(0, 2).map((major, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                              >
+                                {major}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          {opp.apply_link && (
+                            <a
+                              href={opp.apply_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                            >
+                              Apply Now
+                            </a>
+                          )}
+                          <button
+                            onClick={(e) => handleToggleSaveOpp(e, opp)}
+                            disabled={savingOppIds.includes(String(opp.id))}
+                            className={`px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
+                              savedOppIds.includes(String(opp.id))
+                                ? "bg-gold text-white hover:bg-gold/80"
+                                : "bg-slate-200 text-slate-700 hover:bg-purple-100"
+                            } ${savingOppIds.includes(String(opp.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {savingOppIds.includes(String(opp.id)) 
+                              ? "..." 
+                              : savedOppIds.includes(String(opp.id)) 
+                                ? "Saved ✓" 
+                                : "Save"
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
-            {/* Pagination */}
-            {!loading && opportunities.length > 0 && (
+            {/* --- NEW: Dynamic Pagination Controls --- */}
+            {totalPages > 1 && !loading && (
               <div className="mt-12 flex justify-center items-center gap-2">
-                <button className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+                {/* Previous Button */}
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowLeft size={16} className="mr-1" />
                   Previous
                 </button>
-                <button className="px-4 py-2 bg-purple-primary text-white rounded-lg font-semibold">
-                  1
-                </button>
-                <button className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-                  2
-                </button>
-                <button className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-                  3
-                </button>
-                <span className="px-2 text-slate-400">...</span>
-                <button className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+
+                {/* Page Buttons (Dynamic) */}
+                {visiblePages.map((page, index) => (
+                  <PageButton
+                    key={index}
+                    pageNumber={page}
+                    isActive={page === currentPage}
+                    onClick={() => page !== '...' && goToPage(page)}
+                    isEllipsis={page === '...'}
+                  />
+                ))}
+
+                {/* Next Button */}
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Next
+                  <ArrowRight size={16} className="ml-1" />
                 </button>
               </div>
             )}
+            {/* --- END NEW: Dynamic Pagination Controls --- */}
           </section>
+          
         </div>
+        <OrganizationModal
+          selectedOrg={selectedOrg}
+          setSelectedOrg={setSelectedOrg}
+          orgOpportunities={orgOpportunities}
+          loadingOrgDetails={loadingOrgDetails}
+          onToggleSave={handleToggleSaveOrg}
+          isSaved={selectedOrg ? savedOrgIds.includes(String(selectedOrg.id)) : false}
+          isSaving={selectedOrg ? savingOrgIds.includes(String(selectedOrg.id)) : false}
+        />
       </main>
 
       <Footer />

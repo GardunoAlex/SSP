@@ -9,6 +9,8 @@ import orgRoutes from "./routes/org.js";
 
 import adminRoutes from "./routes/admin.js";
 import studentRoutes from "./routes/students.js";
+import savedOrganizationsRoutes from "./routes/savedOrgs.js";
+import organizationRoutes from "./routes/organizations.js";
 import ReviewRoutes from "./routes/reviews.js"
 
 
@@ -40,8 +42,10 @@ app.use(
 );
 
 app.use("/api/saved", savedRoutes);
+app.use("/api/savedOrgs", savedOrganizationsRoutes);
 
 app.use("/api/org", jwtCheck, orgRoutes);
+app.use("/api/organizations", organizationRoutes);
 app.use("/api/student", jwtCheck, studentRoutes);
 
 // ✅ Public routes
