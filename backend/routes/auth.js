@@ -60,7 +60,7 @@ router.post("/sync", async (req, res) => {
       .select();
 
     if (error) {
-      console.error("error in AUTHHH", error, 'user object:', user);
+      console.error("error in AUTH",error);
       return res.status(400).json({ message: "Upsert failed", error });
     }
 

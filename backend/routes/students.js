@@ -65,7 +65,14 @@ router.patch("/", async(req, res) => {
         const token = req.headers.authorization?.split(" ")[1];
         const studentId = await getSupabaseStudentId(token); 
 
+        
         const updates = req.body;
+
+        for (let key in updates) {
+          if (updates[key] === ""){
+            delete updates[key];
+          }
+        }
         const {data, error} = await supabase
         .from('users')
         .update(updates)
