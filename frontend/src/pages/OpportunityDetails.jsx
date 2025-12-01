@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { useAuth0 } from "@auth0/auth0-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { clearCached } from "../lib/apiCache";
@@ -14,7 +13,6 @@ import { MessageSquarePlus } from 'lucide-react';
 
 export default function OpportunityDetails() {
   const { id } = useParams();
-  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
   
