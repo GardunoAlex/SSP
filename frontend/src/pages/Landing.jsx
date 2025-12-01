@@ -13,13 +13,20 @@ const Landing = () => {
   const [searchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
   const [searchTerm, setSearchTerm] = useState(initialSearch);
-  
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { user, isAuthenticated, isLoading } = useAuth0();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate("/discover");
+      const role = user["https://studentstarter.com/role"];
+      
+      if (role === "org") {
+        navigate("/org/dashboard");
+      } else if (role === "student") {
+        navigate("/discover");
+      } else if (role === "admin") {
+        navigate("/admin/dashboard");
+      }
     }
   }, [isAuthenticated, isLoading, navigate]);
 

@@ -3,25 +3,23 @@ import supabase from "../supabaseClient.js";
 
 const router = express.Router();
 
-// get all opportunities
-
+// Get all opportunities
 router.get("/", async (req, res) => {
-    try{
-        const {data, error} = await supabase
-        .from("opportunities")
-        .select("*")
-        .eq("status", "active");
+  try {
+    const { data, error } = await supabase
+      .from("opportunities")
+      .select("*")
+      .eq("status", "active");
 
-        if (error) throw error; 
-        res.json(data);
-    } catch (err) {
-        console.error("Error Fetching Opportunities: ", err)
-        res.status(500).json({error: "Failed to Fetch Opportunities"});
-
-    }
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error("Error Fetching Opportunities: ", err);
+    res.status(500).json({ error: "Failed to Fetch Opportunities" });
+  }
 });
 
-
+// Get opportunities by org_id
 router.get("/org/:org_id", async (req, res) => {
   try {
     const { org_id } = req.params;
@@ -38,7 +36,6 @@ router.get("/org/:org_id", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch opportunities" });
   }
 });
-
 
 // Get a single opportunity by ID
 router.get("/:id", async (req, res) => {
@@ -58,62 +55,100 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-
-// post, create opportunity
-
+// Create opportunity
 router.post("/", async (req, res) => {
-    try{
-        const {title, description, gpa_requirement, link, majors, org_id} = req.body;
-        const {data, error} = await supabase
-        .from("opportunities")
-        .insert([{title, description, gpa_requirement, link, majors, org_id}])
-        .select();
-        
-        if (error) throw error;
+  try {
+    const { 
+      title, 
+      description, 
+      gpa_requirement, 
+      apply_link,        // Changed from "link"
+      majors, 
+      org_id,
+      location,          // Added
+      deadline,          // Added
+      compensation       // Added
+    } = req.body;
 
-        res.json({ message: "Opportunity Created: ", data});
-    } catch (err) {
-        console.error("Error Creating Opportunity: ", err);
-        res.status(500).json({error: "Failed to Create Opportunity"});
-    }
-})
+    const { data, error } = await supabase
+      .from("opportunities")
+      .insert([{ 
+        title, 
+        description, 
+        gpa_requirement, 
+        apply_link,      // Changed from "link"
+        majors, 
+        org_id,
+        location,        // Added
+        deadline,        // Added
+        compensation,    // Added
+        status: "active" // Set default status
+      }])
+      .select()
+      .single();         // Changed to return single object
 
-// "patch" update opportunities
-router.patch("/:id", async (req, res) => {
-    try{
-        const { id } = req.params;
-        const updates = req.body;
-
-        const {data, error} = await supabase
-        .from("opportunities")
-        .update(updates)
-        .eq("id", id)
-        .select();
-
-        if (error) throw error;
-        res.json( { message: "Opportuntiy Edited: ", data})
-    } catch (err) {
-        console.error("Error Updating Community: ", err)
-        res.status(500).json({ error: "Failed to Update Opportunity"})
-    }
-}) 
-
-//delete opportunity
-router.delete("/:id", async (req,res) => {
-    try{
-        const { id } = req.params;
-        const { data, error } = await supabase
-        .from("opportunities")
-        .delete()
-        .eq("id", id)
-
-        if (error) throw error;
-
-        res.json({ message: "Opportunity Deleted"})
-    } catch (err) {
-        console.error("Error Deleting Opportunity: ", err);
-        res.status(500).json({ error: "Failed to Delete Opportunity"});
-    }
+    if (error) throw error;
+    res.json(data);      // Return just the data, not wrapped in message
+  } catch (err) {
+    console.error("Error Creating Opportunity: ", err);
+    res.status(500).json({ error: "Failed to Create Opportunity" });
+  }
 });
 
-export default router; 
+// Update opportunity (changed from PATCH to PUT)
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      title, 
+      description, 
+      gpa_requirement, 
+      apply_link,        // Changed from "link"
+      majors,
+      location,          // Added
+      deadline,          // Added
+      compensation       // Added
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from("opportunities")
+      .update({ 
+        title, 
+        description, 
+        gpa_requirement, 
+        apply_link,      // Changed from "link"
+        majors,
+        location,        // Added
+        deadline,        // Added
+        compensation     // Added
+      })
+      .eq("id", id)
+      .select()
+      .single();         // Return single object
+
+    if (error) throw error;
+    res.json(data);      // Return just the data
+  } catch (err) {
+    console.error("Error Updating Opportunity: ", err);
+    res.status(500).json({ error: "Failed to Update Opportunity" });
+  }
+});
+
+//delete opportunity
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from("opportunities")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+    res.json({ message: "Opportunity Deleted" });
+  } catch (err) {
+    console.error("Error Deleting Opportunity: ", err);
+    res.status(500).json({ error: "Failed to Delete Opportunity" });
+  }
+});
+
+export default router;

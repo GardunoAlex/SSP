@@ -113,16 +113,120 @@ const OrgDashboard = () => {
     );
   }
 
-  if (!organization) {
+  if (!organization || !organization.name) {
     return (
       <div className="min-h-screen bg-cream">
         <OrgNav />
-        <div className="max-w-4xl mx-auto px-6 py-20 pt-32 text-center">
-          <Building2 size={64} className="mx-auto text-slate-300 mb-4" />
-          <h1 className="text-3xl font-bold text-purple-dark mb-4">No Organization Found</h1>
-          <p className="text-slate-600 mb-6">
-            You don't have an organization profile yet. Please contact support to set up your organization.
-          </p>
+        <div className="max-w-6xl mx-auto px-6 py-20 pt-32">
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-purple-dark mb-4">
+              Welcome to Your Dashboard! 👋
+            </h1>
+            <p className="text-xl text-slate-600">
+              Let's get your organization set up so you can start posting opportunities
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-2 border-transparent hover:border-purple-primary transition-all">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">1️⃣</span>
+              </div>
+              <h3 className="text-xl font-bold text-purple-dark mb-2">Set Up Profile</h3>
+              <p className="text-slate-600 text-sm">
+                Add your organization's name, description, and contact info
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-2 border-transparent hover:border-purple-primary transition-all">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">2️⃣</span>
+              </div>
+              <h3 className="text-xl font-bold text-purple-dark mb-2">Post Opportunities</h3>
+              <p className="text-slate-600 text-sm">
+                Create internships, jobs, and other opportunities for students
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-2 border-transparent hover:border-purple-primary transition-all">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">3️⃣</span>
+              </div>
+              <h3 className="text-xl font-bold text-purple-dark mb-2">Connect with Students</h3>
+              <p className="text-slate-600 text-sm">
+                Reach thousands of talented students looking for opportunities
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-purple-dark mb-6">Complete Your Profile</h2>
+            
+            <form onSubmit={handleProfileUpdate} className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-purple-dark mb-2">
+                  Organization Name *
+                </label>
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                  placeholder="e.g., Tech Innovators Club"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-purple-dark mb-2">
+                  Description *
+                </label>
+                <textarea
+                  value={profileForm.org_description}
+                  onChange={(e) => setProfileForm({ ...profileForm, org_description: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                  placeholder="Tell students about your organization..."
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-purple-dark mb-2">
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    value={profileForm.website}
+                    onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                    placeholder="https://yourorganization.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-purple-dark mb-2">
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
+                    placeholder="contact@yourorganization.com"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full px-6 py-3 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-lg"
+              >
+                Complete Setup & Go to Dashboard
+              </button>
+            </form>
+          </div>
         </div>
         <Footer />
       </div>

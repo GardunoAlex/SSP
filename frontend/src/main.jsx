@@ -14,7 +14,8 @@ import "./index.css";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
 // TODO: Create these placeholder pages
-import StudentDashboard from "./pages/StudentDashboard.jsx";
+import CreateOpportunity from "./pages/CreateOpportunity";
+import EditOpportunity from "./pages/EditOpportunity";
 // import Stories from "./pages/Stories.jsx";
 // import Organizations from "./pages/Organizations.jsx";
 // import Profile from "./pages/Profile.jsx";
@@ -27,7 +28,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       domain={import.meta.env.VITE_AUTH0_DOMAIN}
       clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
       authorizationParams={{
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/auth`,
         audience: import.meta.env.VITE_AUTH0_AUDIENCE,
       }}
     >
@@ -49,6 +50,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
           {/* Organization Routes */}
           <Route path="/org/dashboard" element={<OrgDashboard />} />
+          <Route path="/org/create-opportunity" element={<CreateOpportunity />} />
+          <Route path="/org/edit-opportunity/:id" element={<EditOpportunity />} />
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
