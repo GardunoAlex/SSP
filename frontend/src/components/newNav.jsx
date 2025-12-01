@@ -53,7 +53,9 @@ const NewNav = () => {
     return <StudentNav />;
   } else if (isAuthenticated && role == "org") {
     return <StudentNav />;
-  } else {
+  } else if (isAuthenticated && role == "admin"){
+    return <StudentNav />
+  }{
     <StudentNav />
   }
 
