@@ -1,7 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Plus } from "lucide-react";
 
 export default function OrgNav() {
   const { logout, user } = useAuth0();
@@ -61,6 +61,15 @@ export default function OrgNav() {
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300"></span>
           </Link>
 
+          <Link
+            to="/org/create-opportunity"
+            className="flex items-center gap-1 text-purple-900 font-medium hover:text-yellow-500 transition-colors duration-300 relative group"
+          >
+            <Plus size={18} />
+            Post Opportunity
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300"></span>
+          </Link>
+
           <div className="flex items-center space-x-3">
             <img
               src={user?.picture}
@@ -104,6 +113,15 @@ export default function OrgNav() {
             className="block px-6 py-3 text-purple-900 hover:bg-purple-100 hover:text-yellow-500 transition-colors"
           >
             Discover
+          </Link>
+
+          <Link
+            to="/org/create-opportunity"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 px-6 py-3 text-purple-900 hover:bg-purple-100 hover:text-yellow-500 transition-colors"
+          >
+            <Plus size={18} />
+            Post Opportunity
           </Link>
 
           <button
