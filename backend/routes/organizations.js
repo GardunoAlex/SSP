@@ -63,6 +63,11 @@ router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { name, org_description, website, email } = req.body;
 
+  console.log("PUT request received!");
+  console.log("Params:", req.params);
+  console.log("Body:", req.body);
+  console.log("Headers:", req.headers); 
+
   try {
     const { data, error } = await supabase
       .from("users")  
@@ -70,7 +75,7 @@ router.put("/:id", async (req, res) => {
       .eq("id", id)
       .eq("role", "org")  // Added safety check
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     res.json(data);

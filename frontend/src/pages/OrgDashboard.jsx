@@ -4,8 +4,8 @@ import { Building2, Plus, Edit, Trash2, Eye } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { fetchWithCache, clearCached } from "../lib/apiCache";
-import OrgNav from "../components/OrgNav";
 import Footer from "../components/Footer";
+import NewNav from "../components/newNav.jsx";
 
 const OrgDashboard = () => {
   const { user, getAccessTokenSilently } = useAuth0();
@@ -21,6 +21,7 @@ const OrgDashboard = () => {
     website: "",
     email: "",
   });
+  // this useEffect calls the supabase fetch org, but it checks if a user is signed in based on 
 
   useEffect(() => {
     if (user) {
@@ -37,20 +38,29 @@ const OrgDashboard = () => {
       if (!userId) throw new Error('Could not resolve user id');
 
       // Fetch organization profile
-      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+
+      // THIS IS CALLING FROM SUPABASE
+      // userId is from supabase
+      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
       const orgData = await orgRes.json();
       
-      if (orgData && orgData.length > 0) {
-        setOrganization(orgData[0]);
+      if (orgData) {
+        // organization will now hold data from supabase
+        setOrganization(orgData);
         setProfileForm({
-          name: orgData[0].name || "",
-          org_description: orgData[0].org_description || "",
-          website: orgData[0].website || "",
-          email: orgData[0].email || "",
+          name: user.name || "N/A",
+          org_description: orgData.org_description || "",
+          website: orgData.website || "",
+          email: user.email || "N/A",
         });
 
-        // Fetch organization's opportunities
-        const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgData[0].id}`);
+        /**
+         * user.email is what intended to be shown, but it should be implement from orgData instead of user, will need to fix this at a later time. 
+         * this is an issue in api logic and how a user signs up. 
+         */
+
+        // Fetch organization's opportunitie
+        const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${userId}`);
         const oppsData = await oppsRes.json();
         setOpportunities(oppsData);
       }
@@ -64,10 +74,15 @@ const OrgDashboard = () => {
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    const token = await getAccessTokenSilently();
     try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${organization.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+         },
+        
         body: JSON.stringify(profileForm),
       });
 
@@ -104,7 +119,7 @@ const OrgDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="text-center py-20">
           <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-purple-dark mt-4">Loading dashboard...</p>
@@ -116,7 +131,7 @@ const OrgDashboard = () => {
   if (!organization || !organization.name) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="max-w-6xl mx-auto px-6 py-20 pt-32">
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold text-purple-dark mb-4">
@@ -172,7 +187,7 @@ const OrgDashboard = () => {
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                  placeholder="e.g., Tech Innovators Club"
+                  placeholder={user.name}
                   required
                 />
               </div>
@@ -214,7 +229,7 @@ const OrgDashboard = () => {
                     value={profileForm.email}
                     onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                    placeholder="contact@yourorganization.com"
+                    placeholder={user.email}
                   />
                 </div>
               </div>
@@ -235,7 +250,7 @@ const OrgDashboard = () => {
 
   return (
     <div className="min-h-screen bg-cream">
-      <OrgNav />
+      <NewNav />
 
       <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
         {/* Header */}
