@@ -18,6 +18,7 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ✅ Auth0 JWT middleware
 const jwtCheck = auth({
@@ -35,7 +36,7 @@ app.use(
       "http://localhost:5173",          // for local dev
       "https://ssp-phi-ivory.vercel.app" // ✅ your deployed frontend
     ],
-    methods: ["GET", "POST", "PATCH", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })

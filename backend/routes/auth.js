@@ -4,6 +4,9 @@ import fetch from "node-fetch";
 
 const router = express.Router();
 
+// In-memory lock to prevent race conditions
+const syncLocks = new Map();
+
 router.post("/sync", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -13,64 +16,104 @@ router.post("/sync", async (req, res) => {
 
     const token = authHeader.split(" ")[1];
 
-    // Try to decode sub + claims from JWT token first to avoid userinfo and rate limits
+    // Always fetch from userinfo to get complete user data
     let user;
-    try {
-      const payload = token.split('.')[1];
-      const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
-      user = decoded;
-      // Auth0 returns claims like https://studentstarter.com/role; the claim will still show
-    } catch (err) {
-      // if token not a JWT, fall back to userinfo call
-      const userRes = await fetch("https://dev-hdl1kw87a8apz4ni.us.auth0.com/userinfo", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!userRes.ok) {
+    const userRes = await fetch("https://dev-hdl1kw87a8apz4ni.us.auth0.com/userinfo", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    if (!userRes.ok) {
+      try {
+        const payload = token.split('.')[1];
+        const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
+        user = decoded;
+      } catch (err) {
         const text = await userRes.text();
         console.error('Auth0 userinfo fetch failed:', text);
         return res.status(401).json({ error: 'Failed to fetch user info from Auth0' });
       }
+    } else {
       user = await userRes.json();
     }
 
-    // 🧩 Determine role
-    // If your Auth0 rules or app_metadata contains role info, check it here.
-    const role = user["https://studentstarter.com/role"] || "student"; 
-    // Validate we have an id
     if (!user.sub) {
       console.error('Auth0 userinfo has no sub:', user);
       return res.status(400).json({ error: 'Auth0 user missing sub' });
     }
-    // ^ this assumes you’ll add a custom claim (explained below)
 
-    // ensure we have a fallback email to satisfy NOT NULL constraint
-    const fallbackEmail = user.email || (user.name ? `${user.name}@auth0.local` : `${user.sub}@auth0.local`);
-    console.debug('AUTH SYNC: user', user);
-    console.debug('AUTH SYNC: fallbackEmail', fallbackEmail);
-    const { data, error } = await supabase
-      .from("users")
-      .upsert({
-        auth_id: user.sub,
-        email: fallbackEmail,
-        name: user.name || "",
-        role,
-      },
-        { onConflict: "auth_id" }
-      )
-      .select();
+    const role = user["https://studentstarter.com/role"] || "student";
 
-    if (error) {
-      console.error("error in AUTH",error);
-      return res.status(400).json({ message: "Upsert failed", error });
+    // 🔒 Check if sync is already in progress for this user
+    if (syncLocks.has(user.sub)) {
+      // Wait for the ongoing sync to complete
+      await syncLocks.get(user.sub);
+      
+      // Fetch the user that was just created
+      const { data: userData } = await supabase
+        .from("users")
+        .select("*")
+        .eq("auth_id", user.sub)
+        .single();
+      
+      return res.json({ message: "User synced ✅", data: userData });
     }
 
-    console.log(`✅ Synced user: ${user.email} (${role})`, { upsertResult: data });
-    res.json({ message: "User synced ✅", data });
+    // 🔒 Create a lock for this user
+    let resolveLock;
+    const lockPromise = new Promise(resolve => { resolveLock = resolve; });
+    syncLocks.set(user.sub, lockPromise);
+
+    console.debug('AUTH SYNC: Checking user', { sub: user.sub, role: role });
+
+    try {
+      // Check if user exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("auth_id", user.sub)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking for existing user:", checkError);
+        return res.status(500).json({ message: "Database error checking user", error: checkError });
+      }
+
+      let userData;
+
+      if (existingUser) {
+        userData = existingUser;
+      } else {
+        const insertData = {
+          auth_id: user.sub,
+          email: "N/A",
+          name: "N/A",
+          role: role,
+        };
+
+        const { data: newUser, error: insertError } = await supabase
+          .from("users")
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("❌ Insert failed:", insertError);
+          return res.status(500).json({ message: "User insert failed", error: insertError });
+        }
+        userData = newUser;
+      }
+
+      res.json({ message: "User synced ✅", data: userData });
+    } finally {
+      // 🔓 Release the lock
+      resolveLock();
+      syncLocks.delete(user.sub);
+    }
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to sync user" });
+    console.error("💥 Sync error:", err);
+    res.status(500).json({ error: "Failed to sync user", details: err.message });
   }
 });
-
 
 export default router;

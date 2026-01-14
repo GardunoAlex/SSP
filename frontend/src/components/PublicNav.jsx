@@ -47,7 +47,7 @@ const PublicNav = () => {
           </div>
           <div className="text-2xl font-bold">
             <span className="text-purple-700">Student</span>
-            <span className="text-yellow-500">starter</span>
+            <span className="text-yellow-500">Starter</span>
             <span className="text-purple-700 text-3xl">+</span>
           </div>
         </div>
@@ -74,8 +74,18 @@ const PublicNav = () => {
               onClick={() => loginWithRedirect()}
               className="bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
             >
-              Sign In
+              Log In
             </button>
+          </div>
+
+          <Link 
+          to="/signup"
+          className="bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+            Sign Up
+          </Link>
+
+          <div>
+
           </div>
         </div>
       </nav>

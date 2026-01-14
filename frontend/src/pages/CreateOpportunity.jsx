@@ -71,13 +71,15 @@ const CreateOpportunity = () => {
     try {
       const payload = {
         ...formData,
-        organization_id: organization.id,
         gpa_requirement: formData.gpa_requirement || null,
       };
 
+      const token = await getAccessTokenSilently();
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+         },
         body: JSON.stringify(payload),
       });
 
