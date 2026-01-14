@@ -2,6 +2,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useState, useEffect } from "react";
 import StudentNav from "./StudentNav";
 import PublicNav from "./PublicNav";
+import OrgNav from "./OrgNav";
 
 const NewNav = () => {
   const { isAuthenticated, user, getAccessTokenSilently } = useAuth0();
@@ -52,17 +53,12 @@ const NewNav = () => {
   if (isAuthenticated && role === "student") {
     return <StudentNav />;
   } else if (isAuthenticated && role == "org") {
-    return <StudentNav />;
+    return <OrgNav />;
   } else if (isAuthenticated && role == "admin"){
-    return <StudentNav />
+    return <StudentNav />;  // TODO: Add the nav for admin. 
   }{
-    <StudentNav />
+    <StudentNav />;
   }
-
-  // TODO: Add OrgNav for organizations
-  // if (isAuthenticated && role === "org") {
-  //   return <OrgNav />;
-  // }
 
   // Default is public nav
   return <PublicNav />;

@@ -3,7 +3,6 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Building2, Plus, Edit, Trash2, Eye } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
-import { fetchWithCache, clearCached } from "../lib/apiCache";
 import Footer from "../components/Footer";
 import NewNav from "../components/newNav.jsx";
 
@@ -13,7 +12,8 @@ const OrgDashboard = () => {
   const [organization, setOrganization] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("profile"); // profile, opportunities
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("profile");
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
     name: "",
@@ -21,7 +21,6 @@ const OrgDashboard = () => {
     website: "",
     email: "",
   });
-  // this useEffect calls the supabase fetch org, but it checks if a user is signed in based on 
 
   useEffect(() => {
     if (user) {
@@ -31,43 +30,45 @@ const OrgDashboard = () => {
 
   const fetchOrgData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      const supaUser = await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
       if (!userId) throw new Error('Could not resolve user id');
 
-      // Fetch organization profile
-
-      // THIS IS CALLING FROM SUPABASE
-      // userId is from supabase
+      // Fetch organization profile from Supabase
       const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      
+      if (!orgRes.ok) {
+        throw new Error(`Failed to fetch organization: ${orgRes.status}`);
+      }
+      
       const orgData = await orgRes.json();
       
       if (orgData) {
-        // organization will now hold data from supabase
         setOrganization(orgData);
         setProfileForm({
-          name: user.name || "N/A",
+          name: orgData.name || "",
           org_description: orgData.org_description || "",
           website: orgData.website || "",
-          email: user.email || "N/A",
+          email: orgData.email || "",
         });
 
-        /**
-         * user.email is what intended to be shown, but it should be implement from orgData instead of user, will need to fix this at a later time. 
-         * this is an issue in api logic and how a user signs up. 
-         */
-
-        // Fetch organization's opportunitie
+        // Fetch organization's opportunities
         const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${userId}`);
-        const oppsData = await oppsRes.json();
-        setOpportunities(oppsData);
+        if (oppsRes.ok) {
+          const oppsData = await oppsRes.json();
+          setOpportunities(oppsData);
+        }
+      } else {
+        throw new Error("No organization data returned");
       }
 
       setLoading(false);
     } catch (error) {
       console.error("Error fetching org data:", error);
+      setError(error.message);
       setLoading(false);
     }
   };
@@ -82,7 +83,6 @@ const OrgDashboard = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
          },
-        
         body: JSON.stringify(profileForm),
       });
 
@@ -116,6 +116,7 @@ const OrgDashboard = () => {
     }
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
@@ -128,7 +129,34 @@ const OrgDashboard = () => {
     );
   }
 
-  if (!organization || !organization.name) {
+  // Error state
+  if (error || !organization) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <NewNav />
+        <div className="max-w-4xl mx-auto px-6 py-20 pt-32 text-center">
+          <div className="bg-white rounded-2xl shadow-lg p-12">
+            <h1 className="text-3xl font-bold text-purple-dark mb-4">
+              Unable to Load Organization
+            </h1>
+            <p className="text-slate-600 mb-6">
+              {error || "Could not load organization data. Please try again."}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Onboarding state - check for empty name (first time setup)
+  if (organization.name == "N/A" || organization.email == "N/A") {
     return (
       <div className="min-h-screen bg-cream">
         <NewNav />
@@ -187,7 +215,7 @@ const OrgDashboard = () => {
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                  placeholder={user.name}
+                  placeholder="Organization name"
                   required
                 />
               </div>
@@ -222,14 +250,15 @@ const OrgDashboard = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-purple-dark mb-2">
-                    Contact Email
+                    Contact Email *
                   </label>
                   <input
                     type="email"
                     value={profileForm.email}
                     onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                    placeholder={user.email}
+                    placeholder="contact@organization.com"
+                    required
                   />
                 </div>
               </div>
@@ -248,6 +277,7 @@ const OrgDashboard = () => {
     );
   }
 
+  // Main dashboard (org profile is complete)
   return (
     <div className="min-h-screen bg-cream">
       <NewNav />
@@ -258,7 +288,7 @@ const OrgDashboard = () => {
           <div className="flex items-center gap-4 mb-4">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-200 to-gold/30 rounded-2xl flex items-center justify-center">
               <span className="text-3xl font-bold text-white">
-                {organization.name?.charAt(0) || "?"}
+                {organization.name?.charAt(0)?.toUpperCase() || "?"}
               </span>
             </div>
             <div>

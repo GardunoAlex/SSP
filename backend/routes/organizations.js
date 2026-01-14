@@ -62,12 +62,7 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { name, org_description, website, email } = req.body;
-
-  console.log("PUT request received!");
-  console.log("Params:", req.params);
-  console.log("Body:", req.body);
-  console.log("Headers:", req.headers); 
-
+  
   try {
     const { data, error } = await supabase
       .from("users")  
