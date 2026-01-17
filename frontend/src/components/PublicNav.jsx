@@ -72,7 +72,7 @@ const PublicNav = () => {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => loginWithRedirect()}
-              className="bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
+              className="border-2 border-purple-600 text-purple-900 bg-transparent hover:bg-purple-600 hover:text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
             >
               Log In
             </button>
@@ -80,7 +80,7 @@ const PublicNav = () => {
 
           <Link 
           to="/signup"
-          className="bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+          className="border-2 border-transparent bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
             Sign Up
           </Link>
 
