@@ -535,7 +535,7 @@ const Discover = () => {
                     <ChevronDown size={16} />
                   </summary>
                   <div className="pl-2 space-y-2">
-                    {["Mentorships", "Fellowships", "Internships", "Full-Time Roles"].map((type) => (
+                    {["Mentorships", "Fellowships"].map((type) => (
                       <label key={type} className="flex items-center cursor-pointer group">
                         <input
                           type="checkbox"
