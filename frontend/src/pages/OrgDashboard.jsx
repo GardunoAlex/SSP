@@ -281,23 +281,7 @@ const OrgDashboard = () => {
   return (
     <div className="min-h-screen bg-cream">
       <NewNav />
-
-      <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
-        {/* Header */}
-        <div className="mb-12">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-200 to-gold/30 rounded-2xl flex items-center justify-center">
-              <span className="text-3xl font-bold text-white">
-                {organization.name?.charAt(0)?.toUpperCase() || "?"}
-              </span>
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-purple-dark">{organization.name}</h1>
-              <p className="text-slate-600">Organization Dashboard</p>
-            </div>
-          </div>
-        </div>
-
+      <main className="max-w-7xl mx-auto px-6 py-12 pt-28 h-[75vh]">
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b border-slate-200">
           <button
