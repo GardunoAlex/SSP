@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, Filter, ChevronDown, ArrowLeft, ArrowRight } from "lucide-react";
 import NewNav from "../components/newNav";
-import apiCache, { fetchWithCache, clearCached } from "../lib/apiCache";
+import { fetchWithCache, clearCached } from "../lib/apiCache";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { useAuth0 } from "@auth0/auth0-react";
