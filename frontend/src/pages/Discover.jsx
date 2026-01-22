@@ -383,7 +383,7 @@ const Discover = () => {
         <div className="max-w-5xl mx-auto text-center relative z-10 pt-12">
           <h1 className="text-5xl font-bold text-purple-primary mb-4">
             Discover
-            <span className="inline-block w-24 h-1 bg-gold ml-4 align-middle rounded-full"></span>
+            
           </h1>
           <p className="text-xl text-purple-dark mb-10">
             Search, Filter, and Connect with the Resources You Need
