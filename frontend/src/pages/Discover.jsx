@@ -668,25 +668,28 @@ const Discover = () => {
                           <span className="text-xs text-slate-500">
                             {org.verified ? "✓ Verified" : "Pending"}
                           </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleSaveOrg(org);
-                            }}
-                            disabled={savingOrgIds.includes(String(org.id))}
-                            className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
-                              savedOrgIds.includes(String(org.id))
-                                ? "bg-gold text-white hover:bg-gold/80"
-                                : "bg-purple-primary text-white hover:bg-gold"
-                            } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {savingOrgIds.includes(String(org.id)) 
-                              ? "Saving..." 
-                              : savedOrgIds.includes(String(org.id)) 
-                                ? "Saved ✓" 
-                                : "Save"
-                            }
-                          </button>
+
+                          {( cachedSupaUser.role === "student" ) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSaveOrg(org);
+                              }}
+                              disabled={savingOrgIds.includes(String(org.id))}
+                              className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
+                                savedOrgIds.includes(String(org.id))
+                                  ? "bg-gold text-white hover:bg-gold/80"
+                                  : "bg-purple-primary text-white hover:bg-gold"
+                              } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                            >
+                              {savingOrgIds.includes(String(org.id)) 
+                                ? "Saving..." 
+                                : savedOrgIds.includes(String(org.id)) 
+                                  ? "Saved ✓" 
+                                  : "Save"
+                              }
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -727,22 +730,24 @@ const Discover = () => {
                               Apply Now
                             </a>
                           )}
-                          <button
-                            onClick={(e) => handleToggleSaveOpp(e, opp)}
-                            disabled={savingOppIds.includes(String(opp.id))}
-                            className={`px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
-                              savedOppIds.includes(String(opp.id))
-                                ? "bg-gold text-white hover:bg-gold/80"
-                                : "bg-slate-200 text-slate-700 hover:bg-purple-100"
-                            } ${savingOppIds.includes(String(opp.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {savingOppIds.includes(String(opp.id)) 
-                              ? "..." 
-                              : savedOppIds.includes(String(opp.id)) 
-                                ? "Saved ✓" 
-                                : "Save"
-                            }
-                          </button>
+                          {( cachedSupaUser.role === "student" ) && (
+                            <button
+                              onClick={(e) => handleToggleSaveOpp(e, opp)}
+                              disabled={savingOppIds.includes(String(opp.id))}
+                              className={`px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
+                                savedOppIds.includes(String(opp.id))
+                                  ? "bg-gold text-white hover:bg-gold/80"
+                                  : "bg-slate-200 text-slate-700 hover:bg-purple-100"
+                              } ${savingOppIds.includes(String(opp.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                            >
+                              {savingOppIds.includes(String(opp.id)) 
+                                ? "..." 
+                                : savedOppIds.includes(String(opp.id)) 
+                                  ? "Saved ✓" 
+                                  : "Save"
+                              }
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
