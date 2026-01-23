@@ -26,15 +26,6 @@ const FeaturedOpportunities = () => {
         </div>
 
         <OpportunitiesFeed />
-        {/* View All Button */}
-        <div className="text-center mt-12">
-          <Link
-            to="/discover"
-            className="inline-block bg-gradient-to-r from-purple-primary to-gold text-white px-8 py-4 rounded-full font-semibold hover:shadow-xl hover:shadow-purple-primary/30 transition-all duration-300 text-lg"
-          >
-            View All Opportunities
-          </Link>
-        </div>
       </div>
     </section>
   );
