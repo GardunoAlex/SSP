@@ -21,10 +21,9 @@ const FeaturedOpportunities = () => {
             <div className="absolute -bottom-1 left-0 w-32 h-1 bg-gold rounded-full"></div>
           </h2>
           <p className="text-xl text-purple-dark mt-6">
-            Discover internships, mentorships, and programs - sign in to save and apply
+            Discover mentorships and programs - sign in to save and apply
           </p>
         </div>
-
         <OpportunitiesFeed />
       </div>
     </section>
