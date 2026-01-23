@@ -3,7 +3,7 @@ import studentsImage from '../assets/students.png';
 
 const Hero = ({ searchTerm, setSearchTerm }) => {
   return (
-    <section className="relative min-h-[85vh] pt-32 pb-20 px-8 overflow-hidden bg-gradient-to-br from-[#FBF7F0] via-[#FBF7F0] to-purple-100/30">
+    <section className="relative min-h-[95vh] pt-32 pb-20 px-8 overflow-hidden bg-gradient-to-br from-[#FBF7F0] via-[#FBF7F0] to-purple-100/30">
       <div className="absolute inset-0 opacity-[0.08]">
         <div
           className="absolute top-0 left-0 w-full h-full"
@@ -103,7 +103,7 @@ const Hero = ({ searchTerm, setSearchTerm }) => {
                   </svg>
                 </div>
                 <span className="font-semibold text-purple-900">
-                  Organisations <span className="text-yellow-500">200</span>
+                  Organizations <span className="text-yellow-500">200</span>
                 </span>
               </div>
             </div>
