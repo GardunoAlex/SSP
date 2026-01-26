@@ -1,9 +1,8 @@
-import { Search } from "lucide-react";
 import studentsImage from '../assets/students.png';
 
-const Hero = ({ searchTerm, setSearchTerm }) => {
+const Hero = () => {
   return (
-    <section className="relative min-h-[85vh] pt-32 pb-20 px-8 overflow-hidden bg-gradient-to-br from-[#FBF7F0] via-[#FBF7F0] to-purple-100/30">
+    <section className="relative min-h-[95vh] pt-32 pb-20 px-8 overflow-hidden bg-gradient-to-br from-[#FBF7F0] via-[#FBF7F0] to-purple-100/30">
       <div className="absolute inset-0 opacity-[0.08]">
         <div
           className="absolute top-0 left-0 w-full h-full"
@@ -43,34 +42,6 @@ const Hero = ({ searchTerm, setSearchTerm }) => {
               Your Jumpstart to Real-World Experience
             </p>
 
-            {/* Search Bar */}
-            <div className="relative mb-8">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search for opportunities..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && searchTerm.trim()) {
-                      navigate(`/opportunities?search=${encodeURIComponent(searchTerm)}`);
-                    }
-                  }}
-                  className="w-full max-w-2xl h-14 px-6 pr-14 rounded-full border-2 border-transparent focus:border-purple-300 bg-white shadow-lg shadow-purple-600/10 focus:shadow-xl focus:shadow-purple-600/20 transition-all duration-300 text-lg outline-none"
-                />
-                <button
-                  onClick={() => {
-                    if (searchTerm.trim()) {
-                      navigate(`/opportunities?search=${encodeURIComponent(searchTerm)}`);
-                    }
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-yellow-500 transition-colors duration-300"
-                >
-                  <Search size={18} />
-                </button>
-              </div>
-            </div>
-
             {/* Stats Badges */}
             <div className="flex items-center space-x-4 flex-wrap gap-2">
               <div className="bg-white px-6 py-3 rounded-full shadow-md flex items-center space-x-3 hover:shadow-lg transition-shadow duration-300">
@@ -103,7 +74,7 @@ const Hero = ({ searchTerm, setSearchTerm }) => {
                   </svg>
                 </div>
                 <span className="font-semibold text-purple-900">
-                  Organisations <span className="text-yellow-500">200</span>
+                  Organizations <span className="text-yellow-500">200</span>
                 </span>
               </div>
             </div>

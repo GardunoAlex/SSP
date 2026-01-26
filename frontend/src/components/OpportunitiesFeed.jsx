@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
-  Bookmark,
-  BookmarkCheck,
   Calendar,
   MapPin,
   GraduationCap,
@@ -10,34 +8,20 @@ import {
   Lock,
 } from "lucide-react";
 import useDebounce from "../hooks/useDebounce";
-import { getSupabaseUser } from "../lib/apiHelpers";
 import { useNavigate } from "react-router-dom";
 
 const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
   const [opportunities, setOpportunities] = useState([]);
-  const [saved, setSaved] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userId, setUserId] = useState(null);
 
-  const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
+
+  const { isAuthenticated, loginWithRedirect } = useAuth0();
   const debouncedSearch = useDebounce(searchTerm, 300);
 
   const navigate = useNavigate();
 
-  // ✅ Sync user ONCE after login
-  useEffect(() => {
-    const initUser = async () => {
-      if (!isAuthenticated) return;
-      try {
-        const supaUser = await getSupabaseUser(getAccessTokenSilently);
-        if (supaUser?.id) setUserId(supaUser.id);
-      } catch (err) {
-        console.error('OpportunitiesFeed: failed to get supabase user', err);
-      }
-    };
-    initUser();
-  }, [isAuthenticated, getAccessTokenSilently]);
+
 
   // ✅ Fetch all opportunities
   useEffect(() => {
@@ -48,7 +32,7 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
         );
         if (!res.ok) throw new Error("Failed to fetch opportunities");
         const data = await res.json();
-        setOpportunities(data);
+        setOpportunities(data.slice(0, 3));
       } catch (err) {
         setError(err.message);
       } finally {
@@ -57,64 +41,6 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
     };
     fetchOpportunities();
   }, []);
-
-  // ✅ Fetch saved opportunities for user
-  useEffect(() => {
-    const fetchSaved = async () => {
-      if (!isAuthenticated || !userId) return;
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`
-        );
-        const data = await res.json();
-        const savedIds = data.map((s) => s.opportunity_id);
-        setSaved(savedIds);
-      } catch (err) {
-        console.error("Error fetching saved:", err);
-      }
-    };
-    fetchSaved();
-  }, [isAuthenticated, userId]);
-
-  // ✅ Handle save/unsave with login check
-  const handleSave = async (opportunityId) => {
-    if (!isAuthenticated) {
-      const shouldLogin = window.confirm(
-        "Please sign in to save opportunities. Would you like to sign in now?"
-      );
-      if (shouldLogin) {
-        loginWithRedirect();
-      }
-      return;
-    }
-
-    if (!userId) {
-      console.error("No user ID found in state");
-      return;
-    }
-
-    const isAlreadySaved = saved.includes(opportunityId);
-
-    try {
-      if (isAlreadySaved) {
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, opportunity_id: opportunityId }),
-        });
-        setSaved(saved.filter((id) => id !== opportunityId));
-      } else {
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, opportunity_id: opportunityId }),
-        });
-        setSaved([...saved, opportunityId]);
-      }
-    } catch (err) {
-      console.error("Error saving/unsaving:", err);
-    }
-  };
 
   // ✅ Handle view details with login check for preview mode
   const handleViewDetails = (oppId) => {
@@ -190,6 +116,7 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
 
           <div className="p-6">
             {/* Bookmark Button */}
+            {/** 
             <button
               onClick={() => handleSave(opp.id)}
               className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-purple-primary hover:text-gold transition-colors duration-300 shadow-md z-10"
@@ -201,6 +128,8 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
                 <Bookmark className="w-5 h-5" />
               )}
             </button>
+
+            */}
 
             {/* Organization Badge */}
             <div className="flex items-center space-x-2 mb-4">
