@@ -28,6 +28,24 @@ const CreateOpportunity = () => {
 
   const [majorInput, setMajorInput] = useState("");
 
+  const MAJORS = [
+    // Tech
+    "Computer Science",
+    "Data Science",
+    "Software Engineering",
+    "Artificial Intelligence",
+    "Cybersecurity",
+    "Information Systems",
+    "MIS",
+  
+    // Engineering
+    "Computer Engineering",
+    "Electrical Engineering",
+    "Mechanical Engineering",
+    "Biomedical Engineering",
+    "Industrial Engineering",
+  ];
+
   useEffect(() => {
     if (user) {
       fetchOrgData();
@@ -206,14 +224,23 @@ const CreateOpportunity = () => {
                 Relevant Majors
               </label>
               <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={majorInput}
-                  onChange={(e) => setMajorInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMajor())}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                  placeholder="e.g., Computer Science"
-                />
+              <select
+                value={majorInput}
+                onChange={(e) => setMajorInput(e.target.value)}
+                className="
+                  w-full px-4 py-2 rounded-lg border border-slate-300 bg-white
+                  text-slate-700 shadow-sm
+                  focus:outline-none focus:ring-2 focus:ring-purple-primary/40
+                  focus:border-purple-primary
+                  hover:border-purple-primary transition
+                "
+              >
+                <option value="">Select a major</option>
+                {MAJORS.map((major) => (
+                    <option key={major} value={major}>{major}</option>
+                ))}
+                
+              </select>
                 <button
                   type="button"
                   onClick={handleAddMajor}
