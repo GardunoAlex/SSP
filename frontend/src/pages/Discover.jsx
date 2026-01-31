@@ -9,6 +9,7 @@ import { getSupabaseUser } from "../lib/apiHelpers";
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
+import { useNavigate } from "react-router-dom";
 
 const CARDS_PER_PAGE = 15;
 const MAX_VISIBLE_PAGES = 5;
@@ -30,6 +31,7 @@ const Discover = () => {
   const [savingOppIds, setSavingOppIds] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
 
   // Filter states (existing)
   const [filters, setFilters] = useState({
@@ -699,53 +701,84 @@ const Discover = () => {
                   currentCards.map((opp) => (
                     <div
                       key={opp.id}
-                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden"
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden flex flex-col h-full"
                     >
+                      {/* Image / banner */}
                       <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
-                        <p className="text-slate-600 text-sm mb-4 line-clamp-3">{opp.description}</p>
-                        
-                        {opp.majors?.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {opp.majors.slice(0, 2).map((major, idx) => (
-                              <span
-                                key={idx}
-                                className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
-                              >
-                                {major}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          {opp.apply_link && (
-                            <a
-                              href={opp.apply_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
-                            >
-                              Apply Now
-                            </a>
+                  
+                      {/* Card body */}
+                      <div className="p-6 flex flex-col flex-1">
+                        {/* Content */}
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
+                          <p className="text-slate-600 text-sm mb-4 line-clamp-3">
+                            {opp.description}
+                          </p>
+                  
+                          {opp.majors?.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {opp.majors.slice(0, 2).map((major, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                                >
+                                  {major}
+                                </span>
+                              ))}
+                            </div>
                           )}
-                          {( cachedSupaUser.role === "student" ) && (
+                        </div>
+                  
+                        {/* Buttons pinned to bottom */}
+                        <div className="mt-auto">
+                          {opp.apply_link && cachedSupaUser.role !== "org" ? (
+                            <div className="w-full flex flex-col gap-3">
+                              {/* Top row */}
+                              <div className="flex flex-col sm:flex-row gap-3">
+                                <a
+                                  href={opp.apply_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                                >
+                                  Apply Now
+                                </a>
+                  
+                                <button
+                                  onClick={(e) => handleToggleSaveOpp(e, opp)}
+                                  disabled={savingOppIds.includes(String(opp.id))}
+                                  className={`flex-1 px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
+                                    savedOppIds.includes(String(opp.id))
+                                      ? "bg-gold text-white hover:bg-gold/80"
+                                      : "bg-slate-200 text-slate-700 hover:bg-purple-100"
+                                  } ${
+                                    savingOppIds.includes(String(opp.id))
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                >
+                                  {savingOppIds.includes(String(opp.id))
+                                    ? "..."
+                                    : savedOppIds.includes(String(opp.id))
+                                    ? "Saved ✓"
+                                    : "Save"}
+                                </button>
+                              </div>
+                  
+                              {/* Bottom row */}
+                              <button
+                                onClick={() => navigate(`/opportunity/${opp.id}`)}
+                                className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                              >
+                                View Details
+                              </button>
+                            </div>
+                          ) : (
                             <button
-                              onClick={(e) => handleToggleSaveOpp(e, opp)}
-                              disabled={savingOppIds.includes(String(opp.id))}
-                              className={`px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
-                                savedOppIds.includes(String(opp.id))
-                                  ? "bg-gold text-white hover:bg-gold/80"
-                                  : "bg-slate-200 text-slate-700 hover:bg-purple-100"
-                              } ${savingOppIds.includes(String(opp.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                              onClick={() => navigate(`/opportunity/${opp.id}`)}
+                              className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
                             >
-                              {savingOppIds.includes(String(opp.id)) 
-                                ? "..." 
-                                : savedOppIds.includes(String(opp.id)) 
-                                  ? "Saved ✓" 
-                                  : "Save"
-                              }
+                              View Details
                             </button>
                           )}
                         </div>
