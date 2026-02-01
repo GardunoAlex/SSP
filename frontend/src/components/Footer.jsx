@@ -26,7 +26,9 @@ const Footer = () => {
             <Link to="/opportunities" className="text-slate-300 hover:text-gold transition-colors">
               Discover
             </Link>
-            <a href="mailto:studentstarter@gmail.com" className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
+            <a 
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=studentstarterplus@gmail.com&su=Student%20Starter%20Plus%20Contact&body=Hi%20Team%20at%20Student%20Starter%20Plus,"
+              className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Contact
             </a>
