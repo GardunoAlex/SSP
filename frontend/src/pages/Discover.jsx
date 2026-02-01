@@ -324,7 +324,6 @@ const Discover = () => {
       // 📊 GPA
       if (filters.gpa && filters.gpa !== "none") {
         const raw = opp.gpa_requirement;
-        console.log(raw);
         const parsed =
           raw == null
             ? null
@@ -637,10 +636,9 @@ const Discover = () => {
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
                     >
                       <option value="all">All Locations</option>
-                      <option value="remote">Remote</option>
-                      <option value="local">Local</option>
-                      <option value="national">National</option>
-                      <option value="international">International</option>
+                      <option value="Remote">Remote</option>
+                      <option value="On-Site">On-Site</option>
+                      <option value="Hybrid">Hybrid</option>
                     </select>
                   </div>
                 </details>
@@ -653,9 +651,9 @@ const Discover = () => {
                   </summary>
                   <div className="pl-2 space-y-2">
                     {[
-                      { label: "Paid", value: "paid" },
-                      { label: "Stipend", value: "stipend" },
-                      { label: "Unpaid", value: "unpaid" },
+                      { label: "Paid", value: "Paid" },
+                      { label: "Stipend", value: "Stipend" },
+                      { label: "Unpaid", value: "Unpaid" },
                     ].map((option) => (
                       <label key={option.value} className="flex items-center cursor-pointer group">
                         <input

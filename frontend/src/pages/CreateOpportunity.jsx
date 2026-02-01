@@ -198,13 +198,23 @@ const CreateOpportunity = () => {
                 <label className="block text-sm font-semibold text-purple-dark mb-2">
                   Location
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                  placeholder="e.g., Remote, New York, NY"
-                />
+                  className="
+                    w-full px-4 py-2 rounded-lg border border-slate-300 bg-white
+                    text-slate-700 shadow-sm
+                    focus:outline-none focus:ring-2 focus:ring-purple-primary/40
+                    focus:border-purple-primary
+                    hover:border-purple-primary transition
+                  "
+                >
+                  <option value="">Select Location</option>
+                  {["Remote", "On-Site", "Hybrid"].map((location) => (
+                      <option key={location} value={location}>{location}</option>
+                  ))}
+                  
+                </select>
               </div>
             </div>
 
@@ -214,23 +224,23 @@ const CreateOpportunity = () => {
                 Relevant Majors
               </label>
               <div className="flex gap-2 mb-2">
-              <select
-                value={majorInput}
-                onChange={(e) => setMajorInput(e.target.value)}
-                className="
-                  w-full px-4 py-2 rounded-lg border border-slate-300 bg-white
-                  text-slate-700 shadow-sm
-                  focus:outline-none focus:ring-2 focus:ring-purple-primary/40
-                  focus:border-purple-primary
-                  hover:border-purple-primary transition
-                "
-              >
-                <option value="">Select a major</option>
-                {MAJORS.map((major) => (
-                    <option key={major} value={major}>{major}</option>
-                ))}
-                
-              </select>
+                <select
+                  value={majorInput}
+                  onChange={(e) => setMajorInput(e.target.value)}
+                  className="
+                    w-full px-4 py-2 rounded-lg border border-slate-300 bg-white
+                    text-slate-700 shadow-sm
+                    focus:outline-none focus:ring-2 focus:ring-purple-primary/40
+                    focus:border-purple-primary
+                    hover:border-purple-primary transition
+                  "
+                >
+                  <option value="">Select Industry</option>
+                  {MAJORS.map((major) => (
+                      <option key={major} value={major}>{major}</option>
+                  ))}
+                  
+                </select>
                 <button
                   type="button"
                   onClick={handleAddMajor}
@@ -294,13 +304,23 @@ const CreateOpportunity = () => {
               <label className="block text-sm font-semibold text-purple-dark mb-2">
                 Compensation
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.compensation}
                 onChange={(e) => setFormData({ ...formData, compensation: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                placeholder="e.g., $25/hour, Unpaid, Stipend"
-              />
+                className="
+                  w-full px-4 py-2 rounded-lg border border-slate-300 bg-white
+                  text-slate-700 shadow-sm
+                  focus:outline-none focus:ring-2 focus:ring-purple-primary/40
+                  focus:border-purple-primary
+                  hover:border-purple-primary transition
+                "
+              >
+                <option value="">Select compensation</option>
+                {["Paid", "Unpaid", "Stipend"].map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                ))}
+                
+              </select>
             </div>
 
             {/* Submit Button */}
