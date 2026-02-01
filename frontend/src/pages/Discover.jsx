@@ -549,7 +549,7 @@ const Discover = () => {
                 </details>
                 */}
 
-                {/* Filter: GPA Requirement
+                {/* Filter: GPA Requirement*/}
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>GPA Requirement</span>
@@ -576,7 +576,6 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
-                */}
 
                 {/* Filter: Industry/Field */}
                 <details className="mb-4 border-b border-slate-200 pb-4">
