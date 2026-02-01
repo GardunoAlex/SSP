@@ -45,21 +45,11 @@ const Discover = () => {
   });
 
   const MAJORS = [
-    // Tech
-    "Computer Science",
-    "Data Science",
-    "Software Engineering",
-    "Artificial Intelligence",
-    "Cybersecurity",
-    "Information Systems",
-    "MIS",
-  
-    // Engineering
-    "Computer Engineering",
-    "Electrical Engineering",
-    "Mechanical Engineering",
-    "Biomedical Engineering",
-    "Industrial Engineering",
+    "Technology",
+    "Engineering",
+    "Business",
+    "Healthcare",
+    "Marketing",
   ];
 
   useEffect(() => {
@@ -332,7 +322,7 @@ const Discover = () => {
       ) return false;
   
       // 📊 GPA
-      if (filters.gpa !== "none") {
+      if (filters.gpa && filters.gpa !== "none") {
         const raw = opp.gpa_requirement;
         console.log(raw);
         const parsed =
@@ -535,7 +525,7 @@ const Discover = () => {
                   </button>
                 </div>
 
-                {/* Filter: Class Year */}
+                {/* Filter: Class Year
                 <details className="mb-4 border-b border-slate-200 pb-4" open>
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>Class Year</span>
@@ -557,8 +547,9 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
+                */}
 
-                {/* Filter: GPA Requirement */}
+                {/* Filter: GPA Requirement
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>GPA Requirement</span>
@@ -585,11 +576,12 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
+                */}
 
                 {/* Filter: Industry/Field */}
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
-                    <span>Majors</span>
+                    <span>Industry</span>
                     <ChevronDown size={16} />
                   </summary>
                   <div className="pl-2 space-y-2">
@@ -609,7 +601,7 @@ const Discover = () => {
                   </div>
                 </details>
 
-                {/* Filter: Opportunity Type */}
+                {/* Filter: Opportunity Type 
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>Opportunity Type</span>
@@ -631,6 +623,7 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
+                */}
 
                 {/* Filter: Location */}
                 <details className="mb-4 border-b border-slate-200 pb-4">

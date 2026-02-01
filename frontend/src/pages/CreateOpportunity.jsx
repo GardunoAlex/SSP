@@ -29,21 +29,11 @@ const CreateOpportunity = () => {
   const [majorInput, setMajorInput] = useState("");
 
   const MAJORS = [
-    // Tech
-    "Computer Science",
-    "Data Science",
-    "Software Engineering",
-    "Artificial Intelligence",
-    "Cybersecurity",
-    "Information Systems",
-    "MIS",
-  
-    // Engineering
-    "Computer Engineering",
-    "Electrical Engineering",
-    "Mechanical Engineering",
-    "Biomedical Engineering",
-    "Industrial Engineering",
+    "Technology",
+    "Engineering",
+    "Business",
+    "Healthcare",
+    "Marketing",
   ];
 
   useEffect(() => {
