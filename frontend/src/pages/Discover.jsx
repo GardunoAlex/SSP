@@ -38,18 +38,30 @@ const Discover = () => {
     classYear: [],
     gpa: "",
     inclusionFocus: [],
-    industry: [],
+    majors: [],
     opportunityType: [],
     location: "all",
     compensation: "",
   });
 
+  const MAJORS = [
+    "Technology",
+    "Engineering",
+    "Business",
+    "Healthcare",
+    "Marketing",
+  ];
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [activeTab]);
+  
   // Reset page whenever activeTab, filters, or searchQuery changes
   useEffect(() => {
     setCurrentPage(1);
-    fetchOpportunities();
   }, [activeTab, filters, searchQuery]);
-
+  
+  
   // Fetch saved organizations IDs for the current user when auth changes
   useEffect(() => {
     const fetchSavedIds = async () => {
@@ -119,34 +131,29 @@ const Discover = () => {
     setLoading(true);
     try {
       let data = [];
+  
       if (activeTab === "organizations") {
-        // try cached orgs key
-        const key = `organizations`; 
-        try {
-          data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/organizations`);
-        } catch (err) {
-          console.error('Discover: failed to fetch organizations', err);
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations`);
-          data = await response.json();
-        }
-      } else if (activeTab === "opportunities") {
-        const key = `opportunities:${JSON.stringify(filters)}`;
-        try {
-          data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/opportunities`);
-        } catch (err) {
-          console.error('Discover: failed to fetch opportunities', err);
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities`);
-          data = await response.json();
-        }
+        const key = "organizations";
+        data = await fetchWithCache(
+          key,
+          `${import.meta.env.VITE_API_BASE_URL}/api/organizations`
+        );
+      } else {
+        const key = "opportunities"; // ✅ FIXED
+        data = await fetchWithCache(
+          key,
+          `${import.meta.env.VITE_API_BASE_URL}/api/opportunities`
+        );
       }
-      // You would typically apply client-side filtering here if not done on the server
+  
       setOpportunities(data);
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching opportunities:", error);
+    } finally {
       setLoading(false);
     }
   };
+  
 
   const fetchOrgOpportunities = async (orgId) => {
     setLoadingOrgDetails(true);
@@ -295,14 +302,75 @@ const Discover = () => {
       compensation: "",
     });
   };
+  
+  const filteredOpportunities = useMemo(() => {
+    return opportunities.filter((opp) => {
+  
+      // 🔍 SEARCH
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const haystack =
+          `${opp.title} ${opp.description} ${opp.organization_name ?? ""}`.toLowerCase();
+  
+        if (!haystack.includes(q)) return false;
+      }
+  
+      // 🎓 Class Year
+      if (
+        filters.classYear.length > 0 &&
+        !filters.classYear.includes(opp.class_year)
+      ) return false;
+  
+      // 📊 GPA
+      if (filters.gpa && filters.gpa !== "none") {
+        const raw = opp.gpa_requirement;
+        const parsed =
+          raw == null
+            ? null
+            : typeof raw === "number"
+            ? raw
+            : Number(String(raw).match(/(\d+(\.\d+)?)/)?.[1]);
+      
+        if (parsed == null || Number.isNaN(parsed)) return false;
+      
+        if (parsed < Number(filters.gpa)) return false;
+      }
+  
+      // 🏭 Industry
+      if (
+        filters.majors?.length > 0 &&
+        !(opp.majors?.some((m) => filters.majors.includes(m)))
+      ) return false;
 
-  const totalPages = Math.ceil(opportunities.length / CARDS_PER_PAGE);
-
+      // 🧭 Opportunity Type
+      if (
+        filters.opportunityType.length > 0 &&
+        !filters.opportunityType.includes(opp.type)
+      ) return false;
+  
+      // 🌍 Location
+      if (filters.location !== "all" && opp.location !== filters.location)
+        return false;
+  
+      // 💵 Compensation
+      if (
+        filters.compensation &&
+        opp.compensation !== filters.compensation
+      ) return false;
+  
+      return true;
+    });
+  }, [opportunities, filters, searchQuery]);
+  
+  const totalPages = Math.ceil(
+    filteredOpportunities.length / CARDS_PER_PAGE
+  );
+  
   const currentCards = useMemo(() => {
     const startIndex = (currentPage - 1) * CARDS_PER_PAGE;
     const endIndex = startIndex + CARDS_PER_PAGE;
-    return opportunities.slice(startIndex, endIndex);
-  }, [opportunities, currentPage]);
+    return filteredOpportunities.slice(startIndex, endIndex);
+  }, [filteredOpportunities, currentPage]);
 
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -456,7 +524,7 @@ const Discover = () => {
                   </button>
                 </div>
 
-                {/* Filter: Class Year */}
+                {/* Filter: Class Year
                 <details className="mb-4 border-b border-slate-200 pb-4" open>
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>Class Year</span>
@@ -478,8 +546,9 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
+                */}
 
-                {/* Filter: GPA Requirement */}
+                {/* Filter: GPA Requirement*/}
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>GPA Requirement</span>
@@ -489,7 +558,7 @@ const Discover = () => {
                     {[
                       { label: "Min GPA 3.5+", value: "3.5" },
                       { label: "Min GPA 3.0+", value: "3.0" },
-                      { label: "Not Required", value: "none" },
+                      { label: "All", value: "none" },
                     ].map((option) => (
                       <label key={option.value} className="flex items-center cursor-pointer group">
                         <input
@@ -514,23 +583,23 @@ const Discover = () => {
                     <ChevronDown size={16} />
                   </summary>
                   <div className="pl-2 space-y-2">
-                    {["Tech", "Business", "Healthcare", "Arts/Media", "Finance"].map((industry) => (
-                      <label key={industry} className="flex items-center cursor-pointer group">
+                    {MAJORS.map((major) => (
+                      <label key={major} className="flex items-center cursor-pointer group">
                         <input
                           type="checkbox"
-                          checked={filters.industry.includes(industry)}
-                          onChange={() => handleFilterChange("industry", industry)}
+                          checked={filters.majors.includes(major)}
+                          onChange={() => handleFilterChange("majors", major)}
                           className="w-4 h-4 text-purple-primary border-slate-300 rounded focus:ring-purple-primary"
                         />
                         <span className="ml-3 text-sm text-slate-700 group-hover:text-purple-primary">
-                          {industry}
+                          {major}
                         </span>
                       </label>
                     ))}
                   </div>
                 </details>
 
-                {/* Filter: Opportunity Type */}
+                {/* Filter: Opportunity Type 
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>Opportunity Type</span>
@@ -552,6 +621,7 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
+                */}
 
                 {/* Filter: Location */}
                 <details className="mb-4 border-b border-slate-200 pb-4">
@@ -566,10 +636,9 @@ const Discover = () => {
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
                     >
                       <option value="all">All Locations</option>
-                      <option value="remote">Remote</option>
-                      <option value="local">Local</option>
-                      <option value="national">National</option>
-                      <option value="international">International</option>
+                      <option value="Remote">Remote</option>
+                      <option value="On-Site">On-Site</option>
+                      <option value="Hybrid">Hybrid</option>
                     </select>
                   </div>
                 </details>
@@ -582,9 +651,9 @@ const Discover = () => {
                   </summary>
                   <div className="pl-2 space-y-2">
                     {[
-                      { label: "Paid", value: "paid" },
-                      { label: "Stipend", value: "stipend" },
-                      { label: "Unpaid", value: "unpaid" },
+                      { label: "Paid", value: "Paid" },
+                      { label: "Stipend", value: "Stipend" },
+                      { label: "Unpaid", value: "Unpaid" },
                     ].map((option) => (
                       <label key={option.value} className="flex items-center cursor-pointer group">
                         <input
@@ -623,7 +692,7 @@ const Discover = () => {
                   {activeTab === "organizations" && "Partner Organizations"}
                 </h3>
                 <p className="text-slate-600 mt-1">
-                  {loading ? "Loading..." : `${opportunities.length} total results found, showing ${currentCards.length} per page`}
+                  {loading ? "Loading..." : `${filteredOpportunities.length} total results found, showing ${currentCards.length} per page`}
                 </p>
               </div>
               <select className="px-4 py-2 border border-slate-300 rounded-full text-sm font-medium focus:outline-none focus:border-purple-primary">
@@ -640,7 +709,7 @@ const Discover = () => {
                 <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-purple-dark mt-4">Loading {activeTab}...</p>
               </div>
-            ) : opportunities.length === 0 ? (
+            ) : filteredOpportunities.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl">
                 <p className="text-xl text-slate-600 mb-4">No results found</p>
                 <p className="text-slate-500">Try adjusting your filters or search query</p>

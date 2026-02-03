@@ -281,7 +281,7 @@ const OrgDashboard = () => {
   return (
     <div className="min-h-screen bg-cream">
       <NewNav />
-      <main className="max-w-7xl mx-auto px-6 py-12 pt-28 h-[75vh]">
+      <main className="max-w-7xl mx-auto px-6 py-12 pt-28 min-h-[75vh]">
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b border-slate-200">
           <button
@@ -440,7 +440,7 @@ const OrgDashboard = () => {
             )}
           </div>
         ) : (
-          <div>
+          <div >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-purple-dark">Your Opportunities</h2>
               <button

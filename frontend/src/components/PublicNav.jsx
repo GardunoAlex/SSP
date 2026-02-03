@@ -53,13 +53,6 @@ const PublicNav = () => {
         </div>
 
         <div className="hidden md:flex items-center space-x-8">
-          <Link
-            to="/discover"
-            className="text-purple-900 font-medium hover:text-yellow-500 transition-colors duration-300 relative group"
-          >
-            Discover
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300"></span>
-          </Link>
           <a 
             href="#about"
             onClick={scrollToAbout}
