@@ -34,7 +34,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",          // for local dev
-      "https://ssp-phi-ivory.vercel.app" // ✅ your deployed frontend
+      "https://ssp-phi-ivory.vercel.app",
+      "https://studentstarterplus.com" // ✅ your deployed frontend
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
