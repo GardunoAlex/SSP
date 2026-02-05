@@ -22,7 +22,8 @@ const Discover = () => {
   const [showFilters, setShowFilters] = useState(false);
   const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
   const [selectedOrg, setSelectedOrg] = useState(null);
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  // defaulting this value to student default. -> so that it doens't break during compiling
+  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", "student");
   const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
   const [savingOrgIds, setSavingOrgIds] = useState([]);
   const [orgOpportunities, setOrgOpportunities] = useState([]);
@@ -296,7 +297,7 @@ const Discover = () => {
       classYear: [],
       gpa: "",
       inclusionFocus: [],
-      industry: [],
+      majors: [],
       opportunityType: [],
       location: "all",
       compensation: "",
@@ -800,7 +801,7 @@ const Discover = () => {
                   
                         {/* Buttons pinned to bottom */}
                         <div className="mt-auto">
-                          {opp.apply_link && cachedSupaUser.role !== "org" ? (
+                          {opp.apply_link && cachedSupaUser.role !== "org"  ? (
                             <div className="w-full flex flex-col gap-3">
                               {/* Top row */}
                               <div className="flex flex-col sm:flex-row gap-3">
