@@ -42,30 +42,46 @@ router.get("/opportunities", async (req, res) => {
   }
 });
 
-// 🟢 POST new opportunity
+// 🟢 POST new opportunity THIS IS NOT THE API THAT GET'S CALLED. 
 router.post("/opportunities", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
+    console.debug("AUTH header:", req.headers.authorization);
+    console.debug("token exists?", !!token);
+
     const orgId = await getSupabaseOrgId(token);
-    const { title, description, gpa_requirement, link, majors } = req.body;
+    const {
+      title,
+      description,
+      gpa_requirement,
+      majors,
+      apply_link,
+      deadline,
+      compensation,
+      location
+    } = req.body;
 
     const formattedMajors =
     typeof majors === "string"
       ? majors.split(",").map((m) => m.trim())
       : majors;
     const { data, error } = await supabase
-    .from("opportunities")
-    .insert([
-      {
-        title,
-        description,
-        gpa_requirement,
-        apply_link: link,
-        majors: formattedMajors, // ✅ now a proper array
-        org_id: orgId,
-      },
-    ])
-    .select();
+      .from("opportunities")
+      .insert([
+        {
+          title,
+          description,
+          gpa_requirement,
+          apply_link,
+          deadline: deadline || "N/A",
+          compensation: compensation || "N/A",
+          location,
+          majors: formattedMajors,
+          org_id: orgId,
+        },
+      ])
+      .select()
+      .single();
 
     if (error) throw error;
     res.json(data);

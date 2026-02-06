@@ -47,19 +47,12 @@ const PublicNav = () => {
           </div>
           <div className="text-2xl font-bold">
             <span className="text-purple-700">Student</span>
-            <span className="text-yellow-500">starter</span>
+            <span className="text-yellow-500">Starter</span>
             <span className="text-purple-700 text-3xl">+</span>
           </div>
         </div>
 
         <div className="hidden md:flex items-center space-x-8">
-          <Link
-            to="/discover"
-            className="text-purple-900 font-medium hover:text-yellow-500 transition-colors duration-300 relative group"
-          >
-            Discover
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300"></span>
-          </Link>
           <a 
             href="#about"
             onClick={scrollToAbout}
@@ -72,10 +65,20 @@ const PublicNav = () => {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => loginWithRedirect()}
-              className="bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
+              className="border-2 border-purple-600 text-purple-900 bg-transparent hover:bg-purple-600 hover:text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
             >
-              Sign In
+              Log In
             </button>
+          </div>
+
+          <Link 
+          to="/signup"
+          className="border-2 border-transparent bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+            Sign Up
+          </Link>
+
+          <div>
+
           </div>
         </div>
       </nav>

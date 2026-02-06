@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { AdminDashboardSkeleton } from "../components/Skeletons";
+import NewNav from "../components/newNav.jsx";
 
 const MIN_LOAD_MS = 300;
 
@@ -50,6 +51,8 @@ export default function AdminDashboard() {
   }
 
   return (
+    <>
+    <NewNav />
     <div className="max-w-6xl mx-auto p-6 mt-20">
       <h1 className="text-3xl font-bold text-indigo-600 mb-8">Admin Dashboard</h1>
 
@@ -160,5 +163,7 @@ export default function AdminDashboard() {
         </div>
       </section>
     </div>
+
+    </>
   );
 }

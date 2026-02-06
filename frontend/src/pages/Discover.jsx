@@ -3,13 +3,14 @@ import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, Filter, ChevronDown, ArrowLeft, ArrowRight } from "lucide-react";
 import NewNav from "../components/newNav";
-import apiCache, { fetchWithCache, clearCached } from "../lib/apiCache";
+import { fetchWithCache, clearCached } from "../lib/apiCache";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
 import { DiscoverSkeleton } from "../components/Skeletons";
+import { useNavigate } from "react-router-dom";
 
 const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
@@ -23,7 +24,8 @@ const Discover = () => {
   const [showFilters, setShowFilters] = useState(false);
   const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
   const [selectedOrg, setSelectedOrg] = useState(null);
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  // defaulting this value to student default. -> so that it doens't break during compiling
+  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", "student");
   const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
   const [savingOrgIds, setSavingOrgIds] = useState([]);
   const [orgOpportunities, setOrgOpportunities] = useState([]);
@@ -32,24 +34,37 @@ const Discover = () => {
   const [savingOppIds, setSavingOppIds] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
 
   // Filter states (existing)
   const [filters, setFilters] = useState({
     classYear: [],
     gpa: "",
     inclusionFocus: [],
-    industry: [],
+    majors: [],
     opportunityType: [],
     location: "all",
     compensation: "",
   });
 
+  const MAJORS = [
+    "Technology",
+    "Engineering",
+    "Business",
+    "Healthcare",
+    "Marketing",
+  ];
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [activeTab]);
+  
   // Reset page whenever activeTab, filters, or searchQuery changes
   useEffect(() => {
     setCurrentPage(1);
-    fetchOpportunities();
   }, [activeTab, filters, searchQuery]);
-
+  
+  
   // Fetch saved organizations IDs for the current user when auth changes
   useEffect(() => {
     const fetchSavedIds = async () => {
@@ -120,6 +135,7 @@ const Discover = () => {
     const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
     try {
       let data = [];
+  
       if (activeTab === "organizations") {
         const key = `organizations`;
         try {
@@ -152,6 +168,7 @@ const Discover = () => {
       setLoading(false);
     }
   };
+  
 
   const fetchOrgOpportunities = async (orgId) => {
     setLoadingOrgDetails(true);
@@ -296,20 +313,81 @@ const Discover = () => {
       classYear: [],
       gpa: "",
       inclusionFocus: [],
-      industry: [],
+      majors: [],
       opportunityType: [],
       location: "all",
       compensation: "",
     });
   };
+  
+  const filteredOpportunities = useMemo(() => {
+    return opportunities.filter((opp) => {
+  
+      // 🔍 SEARCH
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const haystack =
+          `${opp.title} ${opp.description} ${opp.organization_name ?? ""}`.toLowerCase();
+  
+        if (!haystack.includes(q)) return false;
+      }
+  
+      // 🎓 Class Year
+      if (
+        filters.classYear.length > 0 &&
+        !filters.classYear.includes(opp.class_year)
+      ) return false;
+  
+      // 📊 GPA
+      if (filters.gpa && filters.gpa !== "none") {
+        const raw = opp.gpa_requirement;
+        const parsed =
+          raw == null
+            ? null
+            : typeof raw === "number"
+            ? raw
+            : Number(String(raw).match(/(\d+(\.\d+)?)/)?.[1]);
+      
+        if (parsed == null || Number.isNaN(parsed)) return false;
+      
+        if (parsed < Number(filters.gpa)) return false;
+      }
+  
+      // 🏭 Industry
+      if (
+        filters.majors?.length > 0 &&
+        !(opp.majors?.some((m) => filters.majors.includes(m)))
+      ) return false;
 
-  const totalPages = Math.ceil(opportunities.length / CARDS_PER_PAGE);
-
+      // 🧭 Opportunity Type
+      if (
+        filters.opportunityType.length > 0 &&
+        !filters.opportunityType.includes(opp.type)
+      ) return false;
+  
+      // 🌍 Location
+      if (filters.location !== "all" && opp.location !== filters.location)
+        return false;
+  
+      // 💵 Compensation
+      if (
+        filters.compensation &&
+        opp.compensation !== filters.compensation
+      ) return false;
+  
+      return true;
+    });
+  }, [opportunities, filters, searchQuery]);
+  
+  const totalPages = Math.ceil(
+    filteredOpportunities.length / CARDS_PER_PAGE
+  );
+  
   const currentCards = useMemo(() => {
     const startIndex = (currentPage - 1) * CARDS_PER_PAGE;
     const endIndex = startIndex + CARDS_PER_PAGE;
-    return opportunities.slice(startIndex, endIndex);
-  }, [opportunities, currentPage]);
+    return filteredOpportunities.slice(startIndex, endIndex);
+  }, [filteredOpportunities, currentPage]);
 
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -392,7 +470,7 @@ const Discover = () => {
         <div className="max-w-5xl mx-auto text-center relative z-10 pt-12">
           <h1 className="text-5xl font-bold text-purple-primary mb-4">
             Discover
-            <span className="inline-block w-24 h-1 bg-gold ml-4 align-middle rounded-full"></span>
+            
           </h1>
           <p className="text-xl text-purple-dark mb-10">
             Search, Filter, and Connect with the Resources You Need
@@ -463,7 +541,7 @@ const Discover = () => {
                   </button>
                 </div>
 
-                {/* Filter: Class Year */}
+                {/* Filter: Class Year
                 <details className="mb-4 border-b border-slate-200 pb-4" open>
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>Class Year</span>
@@ -485,8 +563,9 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
+                */}
 
-                {/* Filter: GPA Requirement */}
+                {/* Filter: GPA Requirement*/}
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>GPA Requirement</span>
@@ -496,7 +575,7 @@ const Discover = () => {
                     {[
                       { label: "Min GPA 3.5+", value: "3.5" },
                       { label: "Min GPA 3.0+", value: "3.0" },
-                      { label: "Not Required", value: "none" },
+                      { label: "All", value: "none" },
                     ].map((option) => (
                       <label key={option.value} className="flex items-center cursor-pointer group">
                         <input
@@ -521,30 +600,30 @@ const Discover = () => {
                     <ChevronDown size={16} />
                   </summary>
                   <div className="pl-2 space-y-2">
-                    {["Tech", "Business", "Healthcare", "Arts/Media", "Finance"].map((industry) => (
-                      <label key={industry} className="flex items-center cursor-pointer group">
+                    {MAJORS.map((major) => (
+                      <label key={major} className="flex items-center cursor-pointer group">
                         <input
                           type="checkbox"
-                          checked={filters.industry.includes(industry)}
-                          onChange={() => handleFilterChange("industry", industry)}
+                          checked={filters.majors.includes(major)}
+                          onChange={() => handleFilterChange("majors", major)}
                           className="w-4 h-4 text-purple-primary border-slate-300 rounded focus:ring-purple-primary"
                         />
                         <span className="ml-3 text-sm text-slate-700 group-hover:text-purple-primary">
-                          {industry}
+                          {major}
                         </span>
                       </label>
                     ))}
                   </div>
                 </details>
 
-                {/* Filter: Opportunity Type */}
+                {/* Filter: Opportunity Type 
                 <details className="mb-4 border-b border-slate-200 pb-4">
                   <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
                     <span>Opportunity Type</span>
                     <ChevronDown size={16} />
                   </summary>
                   <div className="pl-2 space-y-2">
-                    {["Mentorships", "Fellowships", "Internships", "Full-Time Roles"].map((type) => (
+                    {["Mentorships", "Fellowships"].map((type) => (
                       <label key={type} className="flex items-center cursor-pointer group">
                         <input
                           type="checkbox"
@@ -559,6 +638,7 @@ const Discover = () => {
                     ))}
                   </div>
                 </details>
+                */}
 
                 {/* Filter: Location */}
                 <details className="mb-4 border-b border-slate-200 pb-4">
@@ -573,10 +653,9 @@ const Discover = () => {
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
                     >
                       <option value="all">All Locations</option>
-                      <option value="remote">Remote</option>
-                      <option value="local">Local</option>
-                      <option value="national">National</option>
-                      <option value="international">International</option>
+                      <option value="Remote">Remote</option>
+                      <option value="On-Site">On-Site</option>
+                      <option value="Hybrid">Hybrid</option>
                     </select>
                   </div>
                 </details>
@@ -589,9 +668,9 @@ const Discover = () => {
                   </summary>
                   <div className="pl-2 space-y-2">
                     {[
-                      { label: "Paid", value: "paid" },
-                      { label: "Stipend", value: "stipend" },
-                      { label: "Unpaid", value: "unpaid" },
+                      { label: "Paid", value: "Paid" },
+                      { label: "Stipend", value: "Stipend" },
+                      { label: "Unpaid", value: "Unpaid" },
                     ].map((option) => (
                       <label key={option.value} className="flex items-center cursor-pointer group">
                         <input
@@ -633,6 +712,18 @@ const Discover = () => {
                   {loading
                     ? "Loading..."
                     : `Showing ${Math.min((currentPage - 1) * CARDS_PER_PAGE + 1, opportunities.length)}–${Math.min(currentPage * CARDS_PER_PAGE, opportunities.length)} of ${opportunities.length} results`
+                  }
+                  
+                  
+                  {loading
+                    ? "Loading..."
+                    : `Showing ${Math.min(
+                        (currentPage - 1) * CARDS_PER_PAGE + 1,
+                        filteredOpportunities.length
+                      )}–${Math.min(
+                        currentPage * CARDS_PER_PAGE,
+                        filteredOpportunities.length
+                      )} of ${filteredOpportunities.length} results`
                   }
                 </p>
               </div>
@@ -677,25 +768,28 @@ const Discover = () => {
                           <span className="text-xs text-slate-500">
                             {org.verified ? "✓ Verified" : "Pending"}
                           </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleSaveOrg(org);
-                            }}
-                            disabled={savingOrgIds.includes(String(org.id))}
-                            className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
-                              savedOrgIds.includes(String(org.id))
-                                ? "bg-gold text-white hover:bg-gold/80"
-                                : "bg-purple-primary text-white hover:bg-gold"
-                            } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {savingOrgIds.includes(String(org.id)) 
-                              ? "Saving..." 
-                              : savedOrgIds.includes(String(org.id)) 
-                                ? "Saved ✓" 
-                                : "Save"
-                            }
-                          </button>
+
+                          {( cachedSupaUser.role === "student" ) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSaveOrg(org);
+                              }}
+                              disabled={savingOrgIds.includes(String(org.id))}
+                              className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
+                                savedOrgIds.includes(String(org.id))
+                                  ? "bg-gold text-white hover:bg-gold/80"
+                                  : "bg-purple-primary text-white hover:bg-gold"
+                              } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                            >
+                              {savingOrgIds.includes(String(org.id)) 
+                                ? "Saving..." 
+                                : savedOrgIds.includes(String(org.id)) 
+                                  ? "Saved ✓" 
+                                  : "Save"
+                              }
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -705,53 +799,86 @@ const Discover = () => {
                   currentCards.map((opp) => (
                     <div
                       key={opp.id}
-                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden"
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden flex flex-col h-full"
                     >
+                      {/* Image / banner */}
                       <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
-                        <p className="text-slate-600 text-sm mb-4 line-clamp-3">{opp.description}</p>
-                        
-                        {opp.majors?.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {opp.majors.slice(0, 2).map((major, idx) => (
-                              <span
-                                key={idx}
-                                className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
-                              >
-                                {major}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          {opp.apply_link && (
-                            <a
-                              href={opp.apply_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
-                            >
-                              Apply Now
-                            </a>
+                  
+                      {/* Card body */}
+                      <div className="p-6 flex flex-col flex-1">
+                        {/* Content */}
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
+                          <p className="text-slate-600 text-sm mb-4 line-clamp-3">
+                            {opp.description}
+                          </p>
+                  
+                          {opp.majors?.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {opp.majors.slice(0, 2).map((major, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                                >
+                                  {major}
+                                </span>
+                              ))}
+                            </div>
                           )}
-                          <button
-                            onClick={(e) => handleToggleSaveOpp(e, opp)}
-                            disabled={savingOppIds.includes(String(opp.id))}
-                            className={`px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
-                              savedOppIds.includes(String(opp.id))
-                                ? "bg-gold text-white hover:bg-gold/80"
-                                : "bg-slate-200 text-slate-700 hover:bg-purple-100"
-                            } ${savingOppIds.includes(String(opp.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {savingOppIds.includes(String(opp.id)) 
-                              ? "..." 
-                              : savedOppIds.includes(String(opp.id)) 
-                                ? "Saved ✓" 
-                                : "Save"
-                            }
-                          </button>
+                        </div>
+                  
+                        {/* Buttons pinned to bottom */}
+                        <div className="mt-auto">
+                          {opp.apply_link && cachedSupaUser.role !== "org"  ? (
+                            <div className="w-full flex flex-col gap-3">
+                              {/* Top row */}
+                              <div className="flex flex-col sm:flex-row gap-3">
+                                <a
+                                  href={opp.apply_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                                >
+                                  Apply Now
+                                </a>
+                  
+                                <button
+                                  onClick={(e) => handleToggleSaveOpp(e, opp)}
+                                  disabled={savingOppIds.includes(String(opp.id))}
+                                  className={`flex-1 px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
+                                    savedOppIds.includes(String(opp.id))
+                                      ? "bg-gold text-white hover:bg-gold/80"
+                                      : "bg-slate-200 text-slate-700 hover:bg-purple-100"
+                                  } ${
+                                    savingOppIds.includes(String(opp.id))
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                >
+                                  {savingOppIds.includes(String(opp.id))
+                                    ? "..."
+                                    : savedOppIds.includes(String(opp.id))
+                                    ? "Saved ✓"
+                                    : "Save"}
+                                </button>
+                              </div>
+                  
+                              {/* Bottom row */}
+                              <button
+                                onClick={() => navigate(`/opportunity/${opp.id}`)}
+                                className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                              >
+                                View Details
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => navigate(`/opportunity/${opp.id}`)}
+                              className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                            >
+                              View Details
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

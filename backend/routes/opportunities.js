@@ -3,6 +3,25 @@ import supabase from "../supabaseClient.js";
 
 const router = express.Router();
 
+// Helper: Get the Supabase org ID from Auth0 token
+async function getSupabaseOrgId(token) {
+  // 1️⃣ Get user info from Auth0
+  const userRes = await fetch("https://dev-hdl1kw87a8apz4ni.us.auth0.com/userinfo", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const user = await userRes.json();
+
+  // 2️⃣ Find matching user in Supabase
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("auth_id", user.sub)
+    .maybeSingle();
+
+  if (error || !data) throw new Error("Supabase org not found");
+  return data.id;
+}
+
 // Get all opportunities
 router.get("/", async (req, res) => {
   try {
@@ -55,16 +74,20 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Create opportunity
+// Create opportunity : this is the real API
 router.post("/", async (req, res) => {
   try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Missing auth token" });
+
+    const org_id = await getSupabaseOrgId(token);
+
     const { 
       title, 
       description, 
       gpa_requirement, 
       apply_link,        // Changed from "link"
       majors, 
-      org_id,
       location,          // Added
       deadline,          // Added
       compensation       // Added
