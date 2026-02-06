@@ -690,7 +690,7 @@ const Discover = () => {
               <div>
                 <h3 className="text-2xl font-bold text-purple-dark">
                   {activeTab === "opportunities" && "Featured Opportunities"}
-                  {activeTab === "organizations" && "Partner Organizations"}
+                  {activeTab === "organizations" && "Featured Organizations"}
                 </h3>
                 <p className="text-slate-600 mt-1">        
                   {loading
