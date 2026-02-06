@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Menu, X } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 
 const PublicNav = () => {
   const { loginWithRedirect } = useAuth0();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,14 +22,16 @@ const PublicNav = () => {
     const aboutSection = document.getElementById("about");
     if (aboutSection) {
       const headerOffset = 80;
-      const elementPosition = aboutSection.getBoundingClientRect().top + window.pageYOffset;
+      const elementPosition =
+        aboutSection.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - headerOffset;
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: "smooth"
+        behavior: "smooth",
       });
     }
+    setMobileOpen(false);
   };
 
   return (
@@ -38,9 +41,13 @@ const PublicNav = () => {
       }`}
     >
       <nav className="container mx-auto px-8 py-5 flex items-center justify-between">
+        {/* Logo */}
         <div
           className="flex items-center space-x-2 cursor-pointer group"
-          onClick={() => navigate("/")}
+          onClick={() => {
+            navigate("/");
+            setMobileOpen(false);
+          }}
         >
           <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-yellow-500 rounded-lg flex items-center justify-center transform rotate-12 transition-transform duration-300 group-hover:rotate-0 group-hover:scale-110">
             <GraduationCap className="text-white text-xl transform -rotate-12 group-hover:rotate-0 transition-transform duration-300" />
@@ -52,8 +59,9 @@ const PublicNav = () => {
           </div>
         </div>
 
+        {/* Desktop Nav */}
         <div className="hidden md:flex items-center space-x-8">
-          <a 
+          <a
             href="#about"
             onClick={scrollToAbout}
             className="text-purple-900 font-medium hover:text-yellow-500 transition-colors duration-300 relative group cursor-pointer"
@@ -62,26 +70,63 @@ const PublicNav = () => {
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-500 group-hover:w-full transition-all duration-300"></span>
           </a>
 
-          <div className="flex items-center space-x-3">
+          <button
+            onClick={() => loginWithRedirect()}
+            className="border-2 border-purple-600 text-purple-900 bg-transparent hover:bg-purple-600 hover:text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
+          >
+            Log In
+          </button>
+
+          <Link
+            to="/signup"
+            className="bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
+          >
+            Sign Up
+          </Link>
+        </div>
+
+        {/* Mobile Hamburger */}
+        <button
+          className="md:hidden text-purple-900"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
+      </nav>
+
+      {/* Mobile Menu */}
+      {mobileOpen && (
+        <div className="md:hidden bg-cream shadow-lg border-t border-purple-200">
+          <div className="flex flex-col space-y-4 px-8 py-6">
+            <a
+              href="#about"
+              onClick={scrollToAbout}
+              className="text-purple-900 font-medium hover:text-yellow-500"
+            >
+              About Us
+            </a>
+
             <button
-              onClick={() => loginWithRedirect()}
-              className="border-2 border-purple-600 text-purple-900 bg-transparent hover:bg-purple-600 hover:text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105"
+              onClick={() => {
+                loginWithRedirect();
+                setMobileOpen(false);
+              }}
+              className="border-2 border-purple-600 text-purple-900 bg-transparent hover:bg-purple-600 hover:text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform "
             >
               Log In
             </button>
-          </div>
 
-          <Link 
-          to="/signup"
-          className="border-2 border-transparent bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
-            Sign Up
-          </Link>
-
-          <div>
-
+            <Link
+              to="/signup"
+              onClick={() => setMobileOpen(false)}
+              className="bg-purple-600 text-cream px-6 py-2.5 rounded-full font-semibold hover:shadow-lg hover:shadow-yellow-500/50 transition-all duration-300 transform text-center"
+            >
+              Sign Up
+            </Link>
           </div>
         </div>
-      </nav>
+      )}
     </header>
   );
 };
