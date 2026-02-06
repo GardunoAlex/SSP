@@ -3,9 +3,8 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Building2, Plus, Edit, Trash2, Eye } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
-import { fetchWithCache, clearCached } from "../lib/apiCache";
-import OrgNav from "../components/OrgNav";
 import Footer from "../components/Footer";
+import NewNav from "../components/newNav.jsx";
 
 const OrgDashboard = () => {
   const { user, getAccessTokenSilently } = useAuth0();
@@ -13,7 +12,8 @@ const OrgDashboard = () => {
   const [organization, setOrganization] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("profile"); // profile, opportunities
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("profile");
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
     name: "",
@@ -30,44 +30,59 @@ const OrgDashboard = () => {
 
   const fetchOrgData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      const supaUser = await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
       if (!userId) throw new Error('Could not resolve user id');
 
-      // Fetch organization profile
-      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+      // Fetch organization profile from Supabase
+      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      
+      if (!orgRes.ok) {
+        throw new Error(`Failed to fetch organization: ${orgRes.status}`);
+      }
+      
       const orgData = await orgRes.json();
       
-      if (orgData && orgData.length > 0) {
-        setOrganization(orgData[0]);
+      if (orgData) {
+        setOrganization(orgData);
         setProfileForm({
-          name: orgData[0].name || "",
-          org_description: orgData[0].org_description || "",
-          website: orgData[0].website || "",
-          email: orgData[0].email || "",
+          name: orgData.name || "",
+          org_description: orgData.org_description || "",
+          website: orgData.website || "",
+          email: orgData.email || "",
         });
 
         // Fetch organization's opportunities
-        const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgData[0].id}`);
-        const oppsData = await oppsRes.json();
-        setOpportunities(oppsData);
+        const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${userId}`);
+        if (oppsRes.ok) {
+          const oppsData = await oppsRes.json();
+          setOpportunities(oppsData);
+        }
+      } else {
+        throw new Error("No organization data returned");
       }
 
       setLoading(false);
     } catch (error) {
       console.error("Error fetching org data:", error);
+      setError(error.message);
       setLoading(false);
     }
   };
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    const token = await getAccessTokenSilently();
     try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${organization.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+         },
         body: JSON.stringify(profileForm),
       });
 
@@ -101,10 +116,11 @@ const OrgDashboard = () => {
     }
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="text-center py-20">
           <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-purple-dark mt-4">Loading dashboard...</p>
@@ -113,10 +129,37 @@ const OrgDashboard = () => {
     );
   }
 
-  if (!organization || !organization.name) {
+  // Error state
+  if (error || !organization) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
+        <div className="max-w-4xl mx-auto px-6 py-20 pt-32 text-center">
+          <div className="bg-white rounded-2xl shadow-lg p-12">
+            <h1 className="text-3xl font-bold text-purple-dark mb-4">
+              Unable to Load Organization
+            </h1>
+            <p className="text-slate-600 mb-6">
+              {error || "Could not load organization data. Please try again."}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Onboarding state - check for empty name (first time setup)
+  if (organization.name == "N/A" || organization.email == "N/A") {
+    return (
+      <div className="min-h-screen bg-cream">
+        <NewNav />
         <div className="max-w-6xl mx-auto px-6 py-20 pt-32">
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold text-purple-dark mb-4">
@@ -172,7 +215,7 @@ const OrgDashboard = () => {
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                  placeholder="e.g., Tech Innovators Club"
+                  placeholder="Organization name"
                   required
                 />
               </div>
@@ -207,14 +250,15 @@ const OrgDashboard = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-purple-dark mb-2">
-                    Contact Email
+                    Contact Email *
                   </label>
                   <input
                     type="email"
                     value={profileForm.email}
                     onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                    placeholder="contact@yourorganization.com"
+                    placeholder="contact@organization.com"
+                    required
                   />
                 </div>
               </div>
@@ -233,26 +277,11 @@ const OrgDashboard = () => {
     );
   }
 
+  // Main dashboard (org profile is complete)
   return (
     <div className="min-h-screen bg-cream">
-      <OrgNav />
-
-      <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
-        {/* Header */}
-        <div className="mb-12">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-200 to-gold/30 rounded-2xl flex items-center justify-center">
-              <span className="text-3xl font-bold text-white">
-                {organization.name?.charAt(0) || "?"}
-              </span>
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-purple-dark">{organization.name}</h1>
-              <p className="text-slate-600">Organization Dashboard</p>
-            </div>
-          </div>
-        </div>
-
+      <NewNav />
+      <main className="max-w-7xl mx-auto px-6 py-12 pt-28 min-h-[75vh]">
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b border-slate-200">
           <button
@@ -411,7 +440,7 @@ const OrgDashboard = () => {
             )}
           </div>
         ) : (
-          <div>
+          <div >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-purple-dark">Your Opportunities</h2>
               <button

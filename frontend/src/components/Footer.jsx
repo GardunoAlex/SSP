@@ -13,7 +13,7 @@ const Footer = () => {
               </div>
               <span className="text-xl font-bold">
                 <span className="text-white">Student</span>
-                <span className="text-gold">Starter</span>
+                <span className="text-yellow-500">Starter</span>
                 <span className="text-white">+</span>
               </span>
             </div>
@@ -23,10 +23,9 @@ const Footer = () => {
           </div>
 
           <div className="flex items-center gap-8 text-sm">
-            <Link to="/opportunities" className="text-slate-300 hover:text-gold transition-colors">
-              Discover
-            </Link>
-            <a href="mailto:studentstarter@gmail.com" className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
+            <a 
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=studentstarterplus@gmail.com&su=Student%20Starter%20Plus%20Contact&body=Hi%20Team%20at%20Student%20Starter%20Plus,"
+              className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Contact
             </a>
@@ -34,7 +33,7 @@ const Footer = () => {
         </div>
 
         <div className="pt-6 border-t border-slate-700 text-center text-slate-400 text-sm">
-          <p>© 2024 StudentStarter+. All rights reserved.</p>
+          <p>© 2026 StudentStarter+. All rights reserved.</p>
         </div>
       </div>
     </footer>

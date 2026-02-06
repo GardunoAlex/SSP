@@ -55,7 +55,7 @@ const StudentNav = () => {
             </div>
             <div className="text-2xl font-bold flex items-baseline">
               <span className="text-purple-700">Student</span>
-              <span className="text-yellow-500">starter</span>
+              <span className="text-yellow-500">Starter</span>
               <span className="text-purple-700 text-3xl leading-none">+</span>
             </div>
           </Link>

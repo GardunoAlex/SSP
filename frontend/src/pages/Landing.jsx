@@ -37,8 +37,7 @@ const Landing = () => {
   return (
     <div className="bg-cream min-h-screen">
       <NewNav />
-      <Hero searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-      <FeaturedOpportunities />
+      <Hero />
       <Features />
       <WhatWeDo />
       <Footer />
