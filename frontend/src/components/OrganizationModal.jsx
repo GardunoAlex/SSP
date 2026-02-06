@@ -3,6 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { clearCached, fetchWithCache } from "../lib/apiCache";
 import { getSupabaseUser } from "../lib/apiHelpers";
+import { OrgModalSkeleton } from "./Skeletons";
 
 const OrganizationModal = ({
   selectedOrg,
@@ -39,7 +40,7 @@ const OrganizationModal = ({
         </div>
 
         {/* Scrollable content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-16rem)] p-8">
+        <div className="overflow-y-auto custom-scrollbar max-h-[calc(90vh-16rem)] p-8">
           <div className="mb-8">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -122,10 +123,7 @@ const OrganizationModal = ({
             </h3>
 
             {loadingOrgDetails ? (
-              <div className="text-center py-12">
-                <div className="inline-block w-10 h-10 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-600 mt-4">Loading opportunities...</p>
-              </div>
+              <OrgModalSkeleton />
             ) : orgOpportunities.length === 0 ? (
               <div className="text-center py-12 bg-slate-50 rounded-2xl">
                 <p className="text-slate-600">

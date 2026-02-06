@@ -9,9 +9,11 @@ import { getSupabaseUser } from "../lib/apiHelpers";
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
+import { DiscoverSkeleton } from "../components/Skeletons";
 
 const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
+const MIN_LOAD_MS = 300;
 const Discover = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
@@ -115,17 +117,19 @@ const Discover = () => {
 
   const fetchOpportunities = async () => {
     setLoading(true);
+    const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
     try {
       let data = [];
       if (activeTab === "organizations") {
-        // try cached orgs key
-        const key = `organizations`; 
+        const key = `organizations`;
         try {
           data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/organizations`);
         } catch (err) {
           console.error('Discover: failed to fetch organizations', err);
           const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations`);
-          data = await response.json();
+          if (response.ok) {
+            data = await response.json();
+          }
         }
       } else if (activeTab === "opportunities") {
         const key = `opportunities:${JSON.stringify(filters)}`;
@@ -134,14 +138,17 @@ const Discover = () => {
         } catch (err) {
           console.error('Discover: failed to fetch opportunities', err);
           const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities`);
-          data = await response.json();
+          if (response.ok) {
+            data = await response.json();
+          }
         }
       }
-      // You would typically apply client-side filtering here if not done on the server
       setOpportunities(data);
-      setLoading(false);
+      await minDelay;
     } catch (error) {
       console.error("Error fetching opportunities:", error);
+      await minDelay;
+    } finally {
       setLoading(false);
     }
   };
@@ -156,7 +163,9 @@ const Discover = () => {
       } catch (err) {
         console.error('Discover: fetch org opps cache failed', err);
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
-        data = await response.json();
+        if (response.ok) {
+          data = await response.json();
+        }
       }
       setOrgOpportunities(data);
       setLoadingOrgDetails(false);
@@ -208,7 +217,7 @@ const Discover = () => {
         });
         if (!res.ok) throw new Error('Failed to save opportunity');
         setSavedOppIds(prev => Array.from(new Set([...prev, String(opp.id)])));
-        clearCached(`saved:${userId}`);
+        clearCached(`savedOps:${userId}`);
       } else {
         //Unsave
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
@@ -218,7 +227,7 @@ const Discover = () => {
         });
         if (!res.ok) throw new Error('Failed to unsave opportunity');
         setSavedOppIds(prev => prev.filter(id => id !== String(opp.id)));
-        clearCached(`saved:${userId}`);
+        clearCached(`savedOps:${userId}`);
       }
     } catch (err) {
       console.error('Discover: toggle saved opportunity failed', err);
@@ -637,10 +646,7 @@ const Discover = () => {
 
             {/* Results Grid */}
             {loading ? (
-              <div className="text-center py-20">
-                <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-purple-dark mt-4">Loading {activeTab}...</p>
-              </div>
+              <DiscoverSkeleton />
             ) : opportunities.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl">
                 <p className="text-xl text-slate-600 mb-4">No results found</p>

@@ -12,6 +12,7 @@ import {
 import useDebounce from "../hooks/useDebounce";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { useNavigate } from "react-router-dom";
+import { OpportunitiesFeedSkeleton } from "./Skeletons";
 
 const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
   const [opportunities, setOpportunities] = useState([]);
@@ -39,13 +40,14 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
     initUser();
   }, [isAuthenticated, getAccessTokenSilently]);
 
-  // ✅ Fetch all opportunities
   useEffect(() => {
     const fetchOpportunities = async () => {
+      const minDelay = new Promise(r => setTimeout(r, 300));
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/opportunities`
-        );
+        const [res] = await Promise.all([
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities`),
+          minDelay
+        ]);
         if (!res.ok) throw new Error("Failed to fetch opportunities");
         const data = await res.json();
         setOpportunities(data);
@@ -144,13 +146,7 @@ const OpportunitiesFeed = ({ searchTerm, isPreview = false }) => {
 
   const displayedOpportunities = isPreview ? filtered.slice(0, 6) : filtered;
 
-  if (loading)
-    return (
-      <div className="text-center py-20">
-        <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-purple-dark mt-4">Loading opportunities...</p>
-      </div>
-    );
+  if (loading) return <OpportunitiesFeedSkeleton />;
 
   if (error)
     return (

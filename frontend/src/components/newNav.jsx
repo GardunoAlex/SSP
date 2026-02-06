@@ -2,14 +2,16 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useState, useEffect } from "react";
 import StudentNav from "./StudentNav";
 import PublicNav from "./PublicNav";
+import { NavSkeleton } from "./Skeletons";
 
 const NewNav = () => {
-  const { isAuthenticated, user, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated, isLoading: authLoading, user, getAccessTokenSilently } = useAuth0();
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
+      if (authLoading) return;
       if (!isAuthenticated) {
         setLoading(false);
         return;
@@ -35,17 +37,10 @@ const NewNav = () => {
     };
 
     fetchUserRole();
-  }, [isAuthenticated, user, getAccessTokenSilently]);
+  }, [isAuthenticated, authLoading, user, getAccessTokenSilently]);
 
-  // Show loading state
-  if (loading && isAuthenticated) {
-    return (
-      <nav className="bg-cream shadow-sm fixed w-full top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-5 flex justify-center">
-          <div className="w-8 h-8 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </nav>
-    );
+  if (authLoading || (loading && isAuthenticated)) {
+    return <NavSkeleton />;
   }
 
   // Render appropriate nav based on role

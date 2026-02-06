@@ -6,6 +6,9 @@ import { getSupabaseUser } from "../lib/apiHelpers";
 import { fetchWithCache, clearCached } from "../lib/apiCache";
 import OrgNav from "../components/OrgNav";
 import Footer from "../components/Footer";
+import { OrgDashboardSkeleton } from "../components/Skeletons";
+
+const MIN_LOAD_MS = 300;
 
 const OrgDashboard = () => {
   const { user, getAccessTokenSilently } = useAuth0();
@@ -30,6 +33,7 @@ const OrgDashboard = () => {
 
   const fetchOrgData = async () => {
     setLoading(true);
+    const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
     try {
       const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
@@ -39,7 +43,7 @@ const OrgDashboard = () => {
       // Fetch organization profile
       const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
       const orgData = await orgRes.json();
-      
+
       if (orgData && orgData.length > 0) {
         setOrganization(orgData[0]);
         setProfileForm({
@@ -55,9 +59,11 @@ const OrgDashboard = () => {
         setOpportunities(oppsData);
       }
 
-      setLoading(false);
+      await minDelay;
     } catch (error) {
       console.error("Error fetching org data:", error);
+      await minDelay;
+    } finally {
       setLoading(false);
     }
   };
@@ -105,10 +111,9 @@ const OrgDashboard = () => {
     return (
       <div className="min-h-screen bg-cream">
         <OrgNav />
-        <div className="text-center py-20">
-          <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-purple-dark mt-4">Loading dashboard...</p>
-        </div>
+        <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
+          <OrgDashboardSkeleton />
+        </main>
       </div>
     );
   }
