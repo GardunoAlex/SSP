@@ -692,13 +692,7 @@ const Discover = () => {
                   {activeTab === "opportunities" && "Featured Opportunities"}
                   {activeTab === "organizations" && "Partner Organizations"}
                 </h3>
-                <p className="text-slate-600 mt-1">
-                  {loading
-                    ? "Loading..."
-                    : `Showing ${Math.min((currentPage - 1) * CARDS_PER_PAGE + 1, opportunities.length)}–${Math.min(currentPage * CARDS_PER_PAGE, opportunities.length)} of ${opportunities.length} results`
-                  }
-                  
-                  
+                <p className="text-slate-600 mt-1">        
                   {loading
                     ? "Loading..."
                     : `Showing ${Math.min(
