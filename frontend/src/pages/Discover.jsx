@@ -11,7 +11,7 @@ import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
 import { useNavigate } from "react-router-dom";
 
-const CARDS_PER_PAGE = 15;
+const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
 const Discover = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -693,7 +693,22 @@ const Discover = () => {
                   {activeTab === "organizations" && "Partner Organizations"}
                 </h3>
                 <p className="text-slate-600 mt-1">
-                  {loading ? "Loading..." : `${filteredOpportunities.length} total results found, showing ${currentCards.length} per page`}
+                  {loading
+                    ? "Loading..."
+                    : `Showing ${Math.min((currentPage - 1) * CARDS_PER_PAGE + 1, opportunities.length)}–${Math.min(currentPage * CARDS_PER_PAGE, opportunities.length)} of ${opportunities.length} results`
+                  }
+                  
+                  
+                  {loading
+                    ? "Loading..."
+                    : `Showing ${Math.min(
+                        (currentPage - 1) * CARDS_PER_PAGE + 1,
+                        filteredOpportunities.length
+                      )}–${Math.min(
+                        currentPage * CARDS_PER_PAGE,
+                        filteredOpportunities.length
+                      )} of ${filteredOpportunities.length} results`
+                  }
                 </p>
               </div>
               <select className="px-4 py-2 border border-slate-300 rounded-full text-sm font-medium focus:outline-none focus:border-purple-primary">
