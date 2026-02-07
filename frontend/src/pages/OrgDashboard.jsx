@@ -5,6 +5,7 @@ import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import Footer from "../components/Footer";
 import { OrgDashboardSkeleton } from "../components/Skeletons";
+import ImageUpload from "../components/ImageUpload";
 
 const MIN_LOAD_MS = 300;
 import NewNav from "../components/newNav.jsx";
@@ -100,6 +101,10 @@ const OrgDashboard = () => {
       console.error("Error updating profile:", error);
       alert("Failed to update profile");
     }
+  };
+
+  const handleBannerUpload = (banner_url) => {
+    setOrganization(prev => ({ ...prev, banner_url }));
   };
 
   const handleDeleteOpportunity = async (oppId) => {
@@ -266,6 +271,14 @@ const OrgDashboard = () => {
                 </div>
               </div>
 
+              <ImageUpload
+                currentUrl={organization.banner_url}
+                onUpload={handleBannerUpload}
+                entityType="org"
+                entityId={organization.id}
+                getToken={getAccessTokenSilently}
+              />
+
               <button
                 type="submit"
                 className="w-full px-6 py-3 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-lg"
@@ -377,6 +390,14 @@ const OrgDashboard = () => {
                   />
                 </div>
 
+                <ImageUpload
+                  currentUrl={organization.banner_url}
+                  onUpload={handleBannerUpload}
+                  entityType="org"
+                  entityId={organization.id}
+                  getToken={getAccessTokenSilently}
+                />
+
                 <div className="flex gap-4">
                   <button
                     type="submit"
@@ -403,6 +424,17 @@ const OrgDashboard = () => {
               </form>
             ) : (
               <div className="space-y-4">
+                {organization.banner_url && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-500 mb-1">Banner</h3>
+                    <img
+                      src={organization.banner_url}
+                      alt="Organization banner"
+                      className="w-full h-48 object-cover rounded-xl"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <h3 className="text-sm font-semibold text-slate-500 mb-1">Description</h3>
                   <p className="text-slate-700">{organization.org_description || "No description"}</p>

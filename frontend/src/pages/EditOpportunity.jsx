@@ -6,6 +6,7 @@ import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import NewNav from "../components/newNav.jsx";
 import Footer from "../components/Footer";
+import ImageUpload from "../components/ImageUpload.jsx";
 
 const EditOpportunity = () => {
   const { id } = useParams();
@@ -25,6 +26,7 @@ const EditOpportunity = () => {
     apply_link: "",
     deadline: "",
     compensation: "",
+    banner_url: "",
   });
 
   const [majorInput, setMajorInput] = useState("");
@@ -65,6 +67,7 @@ const EditOpportunity = () => {
         apply_link: oppData.apply_link || "",
         deadline: oppData.deadline ? oppData.deadline.split('T')[0] : "",
         compensation: oppData.compensation || "",
+        banner_url: oppData.banner_url || "",
       });
 
       setLoading(false);
@@ -141,6 +144,17 @@ const EditOpportunity = () => {
           <p className="text-slate-600 mb-8">Update the details of your opportunity</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+
+            <div className="mb-8">
+              <ImageUpload 
+                currentUrl={formData.banner_url} 
+                onUpload={(newUrl) => setFormData({...formData, banner_url: newUrl})}
+                entityType="opportunity"
+                entityId={id} 
+                getToken={getAccessTokenSilently}
+                entityName={formData.title}
+              />
+            </div>
             {/* Same form fields as CreateOpportunity */}
             <div>
               <label className="block text-sm font-semibold text-purple-dark mb-2">

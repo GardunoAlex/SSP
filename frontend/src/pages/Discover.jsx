@@ -17,6 +17,7 @@ import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
 import { DiscoverSkeleton } from "../components/Skeletons";
 import { useNavigate } from "react-router-dom";
+import defaultBanner from "../assets/SSP Wallpaper.png";
 
 const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
@@ -881,8 +882,13 @@ const Discover = () => {
                         className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden flex flex-col h-full"
                       >
                         {/* Image / banner */}
-                        <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
-
+                        <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 overflow-hidden">
+                          <img 
+                            src={opp.banner_url || defaultBanner} 
+                            alt={opp.title} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                         {/* Card body */}
                         <div className="p-6 flex flex-col flex-1">
                           {/* Content */}
