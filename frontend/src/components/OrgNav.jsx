@@ -114,7 +114,7 @@ export default function OrgNav() {
                 <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50">
                   <div className="px-4 py-3 border-b border-slate-200">
                     <p className="font-bold text-purple-dark text-base break-words whitespace-normal">{organization?.name || error}</p>
-                    <p className="text-purple-dark text-base break-words whitespace-normal">{organization.email}</p>
+                    <p className="text-purple-dark text-base break-words whitespace-normal">{organization?.email}</p>
                   </div>
 
                   <Link

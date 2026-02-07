@@ -10,7 +10,7 @@ import Footer from "../components/Footer";
 const CreateOpportunity = () => {
   const navigate = useNavigate();
   const { user, getAccessTokenSilently } = useAuth0();
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -44,15 +44,18 @@ const CreateOpportunity = () => {
 
   const fetchOrgData = async () => {
     try {
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
-      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      // Always fetch fresh to avoid stale cache from a different account/role
+      const supaUser = await getSupabaseUser(getAccessTokenSilently);
+      if (supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
+      if (!userId) throw new Error("Could not resolve user id");
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      if (!res.ok) throw new Error(`Failed to fetch organization: ${res.status}`);
       const data = await res.json();
-      
-      if (data && data.length > 0) {
-        setOrganization(data[0]);
+
+      if (data) {
+        setOrganization(data);
       }
       setLoading(false);
     } catch (error) {

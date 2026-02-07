@@ -6,7 +6,7 @@ import { NavSkeleton } from "./Skeletons";
 import OrgNav from "./OrgNav";
 
 const NewNav = () => {
-  const { isAuthenticated, isLoading: authLoading, user, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated, isLoading: authLoading, user, logout, getAccessTokenSilently } = useAuth0();
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -24,8 +24,16 @@ const NewNav = () => {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (res.status === 409) {
+          const errData = await res.json();
+          alert(errData.message || "This email is already registered with a different role.");
+          logout({ logoutParams: { returnTo: window.location.origin } });
+          return;
+        }
+
         const data = await res.json();
-        const supaUser = data?.data?.[0];
+        const supaUser = data?.data;
 
         const roleFromAuth0 = user?.["https://studentstarter.com/role"];
         const roleFromSupabase = supaUser?.role;

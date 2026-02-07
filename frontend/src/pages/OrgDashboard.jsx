@@ -49,8 +49,8 @@ const OrgDashboard = () => {
       
       const orgData = await orgRes.json();
 
-      if (orgData && orgData.length > 0) {
-        setOrganization(orgData[0]);
+      if (orgData) {
+        setOrganization(orgData);
         setProfileForm({
           name: orgData.name || "",
           org_description: orgData.org_description || "",
@@ -124,7 +124,7 @@ const OrgDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
           <OrgDashboardSkeleton />
         </main>

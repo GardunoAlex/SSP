@@ -4,14 +4,14 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowLeft } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
-import OrgNav from "../components/OrgNav";
+import NewNav from "../components/newNav.jsx";
 import Footer from "../components/Footer";
 
 const EditOpportunity = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, getAccessTokenSilently } = useAuth0();
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -37,16 +37,19 @@ const EditOpportunity = () => {
 
   const fetchData = async () => {
     try {
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
-      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      // Always fetch fresh to avoid stale cache from a different account/role
+      const supaUser = await getSupabaseUser(getAccessTokenSilently);
+      if (supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
+      if (!userId) throw new Error("Could not resolve user id");
 
       // Fetch organization
-      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      if (!orgRes.ok) throw new Error(`Failed to fetch organization: ${orgRes.status}`);
       const orgData = await orgRes.json();
-      
-      if (orgData && orgData.length > 0) {
-        setOrganization(orgData[0]);
+
+      if (orgData) {
+        setOrganization(orgData);
       }
 
       // Fetch opportunity
@@ -112,7 +115,7 @@ const EditOpportunity = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="text-center py-20">
           <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -122,7 +125,7 @@ const EditOpportunity = () => {
 
   return (
     <div className="min-h-screen bg-cream">
-      <OrgNav />
+      <NewNav />
 
       <main className="max-w-4xl mx-auto px-6 py-12 pt-28">
         <button

@@ -6,20 +6,22 @@ export async function getSupabaseUser(getAccessTokenSilently) {
     });
 
     if (!userResponse.ok) {
-      // Try to sync the user and retry once
+      // /api/student failed (could be an org user or new user not yet synced)
       console.debug('getSupabaseUser: /api/student returned non-ok, trying /api/auth/sync');
-      // sync with retry/backoff in case of rate-limits from Auth0
       let syncRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!syncRes.ok && syncRes.status === 429) {
-        // quick retry with backoff
         await new Promise(r => setTimeout(r, 1000));
         syncRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });
+      }
+      if (syncRes.status === 409) {
+        const errData = await syncRes.json();
+        throw new Error(errData.message || "This email is already registered with a different role.");
       }
       if (!syncRes.ok) {
         const syncText = await syncRes.text();
@@ -27,15 +29,9 @@ export async function getSupabaseUser(getAccessTokenSilently) {
         throw new Error(`Failed to sync user: ${syncText}`);
       }
 
-      // re-fetch student
-      const retryUserResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/student`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!retryUserResponse.ok) {
-        throw new Error('Failed to fetch student after sync');
-      }
-      const retryUserData = await retryUserResponse.json();
-      return retryUserData[0];
+      // Use the sync response directly — it already contains the full user data
+      const syncData = await syncRes.json();
+      return syncData.data;
     }
 
     const userData = await userResponse.json();
