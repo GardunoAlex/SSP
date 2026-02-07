@@ -17,6 +17,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-oauth2-jwt-bearer": "^1.7.1",
+    "multer": "^2.0.2",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {

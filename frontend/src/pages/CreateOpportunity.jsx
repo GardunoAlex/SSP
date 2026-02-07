@@ -4,13 +4,14 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowLeft } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
-import OrgNav from "../components/OrgNav";
+import NewNav from "../components/newNav.jsx";
 import Footer from "../components/Footer";
+import ImageUpload from "../components/ImageUpload.jsx";
 
 const CreateOpportunity = () => {
   const navigate = useNavigate();
   const { user, getAccessTokenSilently } = useAuth0();
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -27,6 +28,8 @@ const CreateOpportunity = () => {
   });
 
   const [majorInput, setMajorInput] = useState("");
+  const [bannerFile, setBannerFile] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
 
   const MAJORS = [
     "Technology",
@@ -44,15 +47,18 @@ const CreateOpportunity = () => {
 
   const fetchOrgData = async () => {
     try {
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
-      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      // Always fetch fresh to avoid stale cache from a different account/role
+      const supaUser = await getSupabaseUser(getAccessTokenSilently);
+      if (supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
+      if (!userId) throw new Error("Could not resolve user id");
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      if (!res.ok) throw new Error(`Failed to fetch organization: ${res.status}`);
       const data = await res.json();
-      
-      if (data && data.length > 0) {
-        setOrganization(data[0]);
+
+      if (data) {
+        setOrganization(data);
       }
       setLoading(false);
     } catch (error) {
@@ -70,6 +76,22 @@ const CreateOpportunity = () => {
 
   const handleRemoveMajor = (major) => {
     setFormData({ ...formData, majors: formData.majors.filter(m => m !== major) });
+  };
+
+  const handleBannerSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      alert("Invalid file type. Use JPEG, PNG, WebP, or GIF.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File too large. Maximum size is 5MB.");
+      return;
+    }
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e) => {
@@ -92,6 +114,21 @@ const CreateOpportunity = () => {
       });
 
       if (!res.ok) throw new Error("Failed to create opportunity");
+      const newOpp = await res.json();
+
+      // Upload banner if a file was selected
+      if (bannerFile && newOpp.id) {
+        const bannerForm = new FormData();
+        bannerForm.append("image", bannerFile);
+        bannerForm.append("entity_type", "opportunity");
+        bannerForm.append("entity_id", newOpp.id);
+
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/upload/banner`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: bannerForm,
+        });
+      }
 
       alert("Opportunity created successfully!");
       navigate("/org/dashboard");
@@ -105,7 +142,7 @@ const CreateOpportunity = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="text-center py-20">
           <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -116,7 +153,7 @@ const CreateOpportunity = () => {
   if (!organization) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="max-w-4xl mx-auto px-6 py-20 pt-32 text-center">
           <h1 className="text-3xl font-bold text-purple-dark mb-4">No Organization Found</h1>
           <p className="text-slate-600">Please contact support to set up your organization.</p>
@@ -128,7 +165,7 @@ const CreateOpportunity = () => {
 
   return (
     <div className="min-h-screen bg-cream">
-      <OrgNav />
+      <NewNav />
 
       <main className="max-w-4xl mx-auto px-6 py-12 pt-28">
         <button
@@ -144,6 +181,20 @@ const CreateOpportunity = () => {
           <p className="text-slate-600 mb-8">Fill out the details below to post a new opportunity</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/*Image upload */}
+            <div className="mb-8">
+              <ImageUpload 
+                currentUrl={bannerPreview} 
+                onUpload={(url) => setBannerPreview(url)} // This handles the local preview
+                entityType="opportunity"
+                entityId={null} // Set to null because the ID isn't created yet
+                entityName={formData.title || "New Opportunity"}
+                getToken={getAccessTokenSilently}
+              />
+              <p className="text-xs text-slate-500 mt-2 italic">
+                * Note: Banner will be finalized once the opportunity is created.
+              </p>
+            </div>
             {/* Title */}
             <div>
               <label className="block text-sm font-semibold text-purple-dark mb-2">

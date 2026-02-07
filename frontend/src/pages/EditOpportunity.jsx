@@ -4,14 +4,15 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowLeft } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
-import OrgNav from "../components/OrgNav";
+import NewNav from "../components/newNav.jsx";
 import Footer from "../components/Footer";
+import ImageUpload from "../components/ImageUpload.jsx";
 
 const EditOpportunity = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, getAccessTokenSilently } = useAuth0();
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -25,6 +26,7 @@ const EditOpportunity = () => {
     apply_link: "",
     deadline: "",
     compensation: "",
+    banner_url: "",
   });
 
   const [majorInput, setMajorInput] = useState("");
@@ -37,16 +39,19 @@ const EditOpportunity = () => {
 
   const fetchData = async () => {
     try {
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
-      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      // Always fetch fresh to avoid stale cache from a different account/role
+      const supaUser = await getSupabaseUser(getAccessTokenSilently);
+      if (supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
+      if (!userId) throw new Error("Could not resolve user id");
 
       // Fetch organization
-      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      if (!orgRes.ok) throw new Error(`Failed to fetch organization: ${orgRes.status}`);
       const orgData = await orgRes.json();
-      
-      if (orgData && orgData.length > 0) {
-        setOrganization(orgData[0]);
+
+      if (orgData) {
+        setOrganization(orgData);
       }
 
       // Fetch opportunity
@@ -62,6 +67,7 @@ const EditOpportunity = () => {
         apply_link: oppData.apply_link || "",
         deadline: oppData.deadline ? oppData.deadline.split('T')[0] : "",
         compensation: oppData.compensation || "",
+        banner_url: oppData.banner_url || "",
       });
 
       setLoading(false);
@@ -112,7 +118,7 @@ const EditOpportunity = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="text-center py-20">
           <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -122,7 +128,7 @@ const EditOpportunity = () => {
 
   return (
     <div className="min-h-screen bg-cream">
-      <OrgNav />
+      <NewNav />
 
       <main className="max-w-4xl mx-auto px-6 py-12 pt-28">
         <button
@@ -138,6 +144,17 @@ const EditOpportunity = () => {
           <p className="text-slate-600 mb-8">Update the details of your opportunity</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+
+            <div className="mb-8">
+              <ImageUpload 
+                currentUrl={formData.banner_url} 
+                onUpload={(newUrl) => setFormData({...formData, banner_url: newUrl})}
+                entityType="opportunity"
+                entityId={id} 
+                getToken={getAccessTokenSilently}
+                entityName={formData.title}
+              />
+            </div>
             {/* Same form fields as CreateOpportunity */}
             <div>
               <label className="block text-sm font-semibold text-purple-dark mb-2">

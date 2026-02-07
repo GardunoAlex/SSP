@@ -1,7 +1,13 @@
 // pages/Discover.jsx
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Filter, ChevronDown, ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  Search,
+  Filter,
+  ChevronDown,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
 import NewNav from "../components/newNav";
 import { fetchWithCache, clearCached } from "../lib/apiCache";
 import useLocalStorage from "../hooks/useLocalStorage";
@@ -9,21 +15,30 @@ import { getSupabaseUser } from "../lib/apiHelpers";
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
+import { DiscoverSkeleton } from "../components/Skeletons";
 import { useNavigate } from "react-router-dom";
+import defaultBanner from "../assets/SSP Wallpaper.png";
 
 const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
+const MIN_LOAD_MS = 300;
 const Discover = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") || "",
+  );
   const [activeTab, setActiveTab] = useState("opportunities"); // opportunities, events, organizations
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
+  const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } =
+    useAuth0();
   const [selectedOrg, setSelectedOrg] = useState(null);
   // defaulting this value to student default. -> so that it doens't break during compiling
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", "student");
+  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage(
+    "supaUser",
+    "student",
+  );
   const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
   const [savingOrgIds, setSavingOrgIds] = useState([]);
   const [orgOpportunities, setOrgOpportunities] = useState([]);
@@ -56,23 +71,25 @@ const Discover = () => {
   useEffect(() => {
     fetchOpportunities();
   }, [activeTab]);
-  
+
   // Reset page whenever activeTab, filters, or searchQuery changes
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab, filters, searchQuery]);
-  
-  
+
   // Fetch saved organizations IDs for the current user when auth changes
   useEffect(() => {
     const fetchSavedIds = async () => {
       if (!user) return;
       try {
-        const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+        const supaUser =
+          cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
         if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
         const userId = supaUser?.id;
         if (!userId) return setSavedOrgIds([]);
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`,
+        );
         const data = await res.json();
         setSavedOrgIds(data.map((o) => String(o.id)));
       } catch (err) {
@@ -86,13 +103,16 @@ const Discover = () => {
   useEffect(() => {
     const fetchSavedOppIds = async () => {
       if (!user) return;
-      try{
-        const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      try {
+        const supaUser =
+          cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
         if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
         const userId = supaUser?.id;
         if (!userId) return setSavedOppIds([]);
 
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`,
+        );
         const data = await res.json();
         console.log("Fetched saved opps data:", data);
         setSavedOppIds(data.map((opportunity) => String(opportunity.id)));
@@ -111,11 +131,14 @@ const Discover = () => {
       if (user) {
         (async () => {
           try {
-            const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+            const supaUser =
+              cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
             if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
             const userId = supaUser?.id;
             if (!userId) return setSavedOrgIds([]);
-            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`);
+            const res = await fetch(
+              `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`,
+            );
             const data = await res.json();
             setSavedOrgIds(data.map((o) => String(o.id)));
           } catch (err) {
@@ -130,31 +153,52 @@ const Discover = () => {
 
   const fetchOpportunities = async () => {
     setLoading(true);
+    const minDelay = new Promise((r) => setTimeout(r, MIN_LOAD_MS));
     try {
       let data = [];
-  
+
       if (activeTab === "organizations") {
-        const key = "organizations";
-        data = await fetchWithCache(
-          key,
-          `${import.meta.env.VITE_API_BASE_URL}/api/organizations`
-        );
-      } else {
-        const key = "opportunities"; // ✅ FIXED
-        data = await fetchWithCache(
-          key,
-          `${import.meta.env.VITE_API_BASE_URL}/api/opportunities`
-        );
+        const key = `organizations`;
+        try {
+          data = await fetchWithCache(
+            key,
+            `${import.meta.env.VITE_API_BASE_URL}/api/organizations`,
+          );
+        } catch (err) {
+          console.error("Discover: failed to fetch organizations", err);
+          const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/api/organizations`,
+          );
+          if (response.ok) {
+            data = await response.json();
+          }
+        }
+      } else if (activeTab === "opportunities") {
+        const key = `opportunities:${JSON.stringify(filters)}`;
+        try {
+          data = await fetchWithCache(
+            key,
+            `${import.meta.env.VITE_API_BASE_URL}/api/opportunities`,
+          );
+        } catch (err) {
+          console.error("Discover: failed to fetch opportunities", err);
+          const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/api/opportunities`,
+          );
+          if (response.ok) {
+            data = await response.json();
+          }
+        }
       }
-  
       setOpportunities(data);
+      await minDelay;
     } catch (error) {
       console.error("Error fetching opportunities:", error);
+      await minDelay;
     } finally {
       setLoading(false);
     }
   };
-  
 
   const fetchOrgOpportunities = async (orgId) => {
     setLoadingOrgDetails(true);
@@ -162,11 +206,18 @@ const Discover = () => {
       const key = `orgOpp:${orgId}`;
       let data;
       try {
-        data = await fetchWithCache(key, `${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
+        data = await fetchWithCache(
+          key,
+          `${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`,
+        );
       } catch (err) {
-        console.error('Discover: fetch org opps cache failed', err);
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`);
-        data = await response.json();
+        console.error("Discover: fetch org opps cache failed", err);
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgId}`,
+        );
+        if (response.ok) {
+          data = await response.json();
+        }
       }
       setOrgOpportunities(data);
       setLoadingOrgDetails(false);
@@ -180,7 +231,7 @@ const Discover = () => {
   const handleOrgClick = (org) => {
     setSelectedOrg(org);
     fetchOrgOpportunities(org.id);
-  }
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -201,40 +252,49 @@ const Discover = () => {
       }
 
       // avoid double-saving or unsaving
-      if (savingOppIds.includes(String(opp.id))) return;  
-      setSavingOppIds(prev => [...prev, String(opp.id)]);
+      if (savingOppIds.includes(String(opp.id))) return;
+      setSavingOppIds((prev) => [...prev, String(opp.id)]);
 
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      const supaUser =
+        cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
-      if (!userId) throw new Error('Unable to get user id');
+      if (!userId) throw new Error("Unable to get user id");
       const alreadySaved = savedOppIds.includes(String(opp.id));
       if (!alreadySaved) {
         //Save
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
-        });
-        if (!res.ok) throw new Error('Failed to save opportunity');
-        setSavedOppIds(prev => Array.from(new Set([...prev, String(opp.id)])));
-        clearCached(`saved:${userId}`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/saved`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+          },
+        );
+        if (!res.ok) throw new Error("Failed to save opportunity");
+        setSavedOppIds((prev) =>
+          Array.from(new Set([...prev, String(opp.id)])),
+        );
+        clearCached(`savedOps:${userId}`);
       } else {
         //Unsave
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
-        });
-        if (!res.ok) throw new Error('Failed to unsave opportunity');
-        setSavedOppIds(prev => prev.filter(id => id !== String(opp.id)));
-        clearCached(`saved:${userId}`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/saved`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+          },
+        );
+        if (!res.ok) throw new Error("Failed to unsave opportunity");
+        setSavedOppIds((prev) => prev.filter((id) => id !== String(opp.id)));
+        clearCached(`savedOps:${userId}`);
       }
     } catch (err) {
-      console.error('Discover: toggle saved opportunity failed', err);
-      alert('Failed to update saved opportunity. Please try again.');
+      console.error("Discover: toggle saved opportunity failed", err);
+      alert("Failed to update saved opportunity. Please try again.");
     } finally {
-      setSavingOppIds(prev => prev.filter(id => id !== String(opp.id)));
+      setSavingOppIds((prev) => prev.filter((id) => id !== String(opp.id)));
     }
   };
   const handleToggleSaveOrg = async (org) => {
@@ -246,49 +306,66 @@ const Discover = () => {
 
       // avoid double-saving or unsaving
       if (savingOrgIds.includes(String(org.id))) return;
-      setSavingOrgIds(prev => [...prev, String(org.id)]);
+      setSavingOrgIds((prev) => [...prev, String(org.id)]);
 
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
+      const supaUser =
+        cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
-      if (!userId) throw new Error('Unable to get user id');
-      if (!userId) throw new Error('Unable to get user id');
+      if (!userId) throw new Error("Unable to get user id");
+      if (!userId) throw new Error("Unable to get user id");
 
       const alreadySaved = savedOrgIds.includes(String(org.id));
       if (!alreadySaved) {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, org_id: org.id }),
-        });
-        if (!res.ok) throw new Error('Failed to save org');
-        setSavedOrgIds(prev => Array.from(new Set([...prev, String(org.id)])));
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, org_id: org.id }),
+          },
+        );
+        if (!res.ok) throw new Error("Failed to save org");
+        setSavedOrgIds((prev) =>
+          Array.from(new Set([...prev, String(org.id)])),
+        );
         clearCached(`savedOrgs:${userId}`);
-        window.dispatchEvent(new CustomEvent('savedOrgChanged', { detail: { orgId: org.id, saved: true } }));
+        window.dispatchEvent(
+          new CustomEvent("savedOrgChanged", {
+            detail: { orgId: org.id, saved: true },
+          }),
+        );
       } else {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, org_id: org.id }),
-        });
-        if (!res.ok) throw new Error('Failed to unsave org');
-        setSavedOrgIds(prev => prev.filter(id => id !== String(org.id)));
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, org_id: org.id }),
+          },
+        );
+        if (!res.ok) throw new Error("Failed to unsave org");
+        setSavedOrgIds((prev) => prev.filter((id) => id !== String(org.id)));
         clearCached(`savedOrgs:${userId}`);
-        window.dispatchEvent(new CustomEvent('savedOrgChanged', { detail: { orgId: org.id, saved: false } }));
+        window.dispatchEvent(
+          new CustomEvent("savedOrgChanged", {
+            detail: { orgId: org.id, saved: false },
+          }),
+        );
       }
     } catch (err) {
-      console.error('Discover: toggle saved org failed', err);
+      console.error("Discover: toggle saved org failed", err);
     } finally {
-      setSavingOrgIds(prev => prev.filter(id => id !== String(org.id)));
+      setSavingOrgIds((prev) => prev.filter((id) => id !== String(org.id)));
     }
   };
 
   const handleFilterChange = (category, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [category]: prev[category].includes?.(value)
-        ? prev[category].filter(item => item !== value)
-        : [...(prev[category] || []), value]
+        ? prev[category].filter((item) => item !== value)
+        : [...(prev[category] || []), value],
     }));
   };
 
@@ -303,25 +380,25 @@ const Discover = () => {
       compensation: "",
     });
   };
-  
+
   const filteredOpportunities = useMemo(() => {
     return opportunities.filter((opp) => {
-  
       // 🔍 SEARCH
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const haystack =
           `${opp.title} ${opp.description} ${opp.organization_name ?? ""}`.toLowerCase();
-  
+
         if (!haystack.includes(q)) return false;
       }
-  
+
       // 🎓 Class Year
       if (
         filters.classYear.length > 0 &&
         !filters.classYear.includes(opp.class_year)
-      ) return false;
-  
+      )
+        return false;
+
       // 📊 GPA
       if (filters.gpa && filters.gpa !== "none") {
         const raw = opp.gpa_requirement;
@@ -329,44 +406,42 @@ const Discover = () => {
           raw == null
             ? null
             : typeof raw === "number"
-            ? raw
-            : Number(String(raw).match(/(\d+(\.\d+)?)/)?.[1]);
-      
+              ? raw
+              : Number(String(raw).match(/(\d+(\.\d+)?)/)?.[1]);
+
         if (parsed == null || Number.isNaN(parsed)) return false;
-      
+
         if (parsed < Number(filters.gpa)) return false;
       }
-  
+
       // 🏭 Industry
       if (
         filters.majors?.length > 0 &&
-        !(opp.majors?.some((m) => filters.majors.includes(m)))
-      ) return false;
+        !opp.majors?.some((m) => filters.majors.includes(m))
+      )
+        return false;
 
       // 🧭 Opportunity Type
       if (
         filters.opportunityType.length > 0 &&
         !filters.opportunityType.includes(opp.type)
-      ) return false;
-  
+      )
+        return false;
+
       // 🌍 Location
       if (filters.location !== "all" && opp.location !== filters.location)
         return false;
-  
+
       // 💵 Compensation
-      if (
-        filters.compensation &&
-        opp.compensation !== filters.compensation
-      ) return false;
-  
+      if (filters.compensation && opp.compensation !== filters.compensation)
+        return false;
+
       return true;
     });
   }, [opportunities, filters, searchQuery]);
-  
-  const totalPages = Math.ceil(
-    filteredOpportunities.length / CARDS_PER_PAGE
-  );
-  
+
+  const totalPages = Math.ceil(filteredOpportunities.length / CARDS_PER_PAGE);
+
   const currentCards = useMemo(() => {
     const startIndex = (currentPage - 1) * CARDS_PER_PAGE;
     const endIndex = startIndex + CARDS_PER_PAGE;
@@ -376,7 +451,9 @@ const Discover = () => {
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      document.getElementById('content-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .getElementById("content-start")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
@@ -386,13 +463,16 @@ const Discover = () => {
     }
 
     const pages = [];
-    const startPage = Math.max(2, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2) + 1);
+    const startPage = Math.max(
+      2,
+      currentPage - Math.floor(MAX_VISIBLE_PAGES / 2) + 1,
+    );
     const endPage = Math.min(totalPages - 1, startPage + MAX_VISIBLE_PAGES - 3);
 
     pages.push(1); // Always show first page
 
     if (startPage > 2) {
-      pages.push('...'); 
+      pages.push("...");
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -400,7 +480,7 @@ const Discover = () => {
     }
 
     if (endPage < totalPages - 1) {
-      pages.push('...'); // Right ellipsis
+      pages.push("..."); // Right ellipsis
     }
 
     if (!pages.includes(totalPages)) {
@@ -409,13 +489,16 @@ const Discover = () => {
 
     // Filter out duplicate ellipses and adjacent page numbers/ellipses
     return pages.filter((page, index, array) => {
-        if (page === '...' && (array[index - 1] === '...' || array[index + 1] === '...')) {
-            return false;
-        }
-        return true;
+      if (
+        page === "..." &&
+        (array[index - 1] === "..." || array[index + 1] === "...")
+      ) {
+        return false;
+      }
+      return true;
     });
   };
-  
+
   const visiblePages = getVisiblePages();
 
   const PageButton = ({ pageNumber, isActive, onClick, isEllipsis }) => {
@@ -436,10 +519,9 @@ const Discover = () => {
     );
   };
 
-
   return (
     <div className="min-h-screen bg-cream">
-      <NewNav/>
+      <NewNav />
       <section className="relative pt-32 pb-20 px-8 bg-gradient-to-br from-purple-50 to-cream overflow-hidden">
         {/* Background pattern */}
         <div
@@ -454,7 +536,6 @@ const Discover = () => {
         <div className="max-w-5xl mx-auto text-center relative z-10 pt-12">
           <h1 className="text-5xl font-bold text-purple-primary mb-4">
             Discover
-            
           </h1>
           <p className="text-xl text-purple-dark mb-10">
             Search, Filter, and Connect with the Resources You Need
@@ -561,12 +642,20 @@ const Discover = () => {
                       { label: "Min GPA 3.0+", value: "3.0" },
                       { label: "All", value: "none" },
                     ].map((option) => (
-                      <label key={option.value} className="flex items-center cursor-pointer group">
+                      <label
+                        key={option.value}
+                        className="flex items-center cursor-pointer group"
+                      >
                         <input
                           type="radio"
                           name="gpa"
                           checked={filters.gpa === option.value}
-                          onChange={() => setFilters(prev => ({ ...prev, gpa: option.value }))}
+                          onChange={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              gpa: option.value,
+                            }))
+                          }
                           className="w-4 h-4 text-purple-primary border-slate-300 focus:ring-purple-primary"
                         />
                         <span className="ml-3 text-sm text-slate-700 group-hover:text-purple-primary">
@@ -585,7 +674,10 @@ const Discover = () => {
                   </summary>
                   <div className="pl-2 space-y-2">
                     {MAJORS.map((major) => (
-                      <label key={major} className="flex items-center cursor-pointer group">
+                      <label
+                        key={major}
+                        className="flex items-center cursor-pointer group"
+                      >
                         <input
                           type="checkbox"
                           checked={filters.majors.includes(major)}
@@ -633,7 +725,12 @@ const Discover = () => {
                   <div className="pl-2">
                     <select
                       value={filters.location}
-                      onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+                      onChange={(e) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          location: e.target.value,
+                        }))
+                      }
                       className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
                     >
                       <option value="all">All Locations</option>
@@ -656,12 +753,20 @@ const Discover = () => {
                       { label: "Stipend", value: "Stipend" },
                       { label: "Unpaid", value: "Unpaid" },
                     ].map((option) => (
-                      <label key={option.value} className="flex items-center cursor-pointer group">
+                      <label
+                        key={option.value}
+                        className="flex items-center cursor-pointer group"
+                      >
                         <input
                           type="radio"
                           name="compensation"
                           checked={filters.compensation === option.value}
-                          onChange={() => setFilters(prev => ({ ...prev, compensation: option.value }))}
+                          onChange={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              compensation: option.value,
+                            }))
+                          }
                           className="w-4 h-4 text-purple-primary border-slate-300 focus:ring-purple-primary"
                         />
                         <span className="ml-3 text-sm text-slate-700 group-hover:text-purple-primary">
@@ -692,17 +797,10 @@ const Discover = () => {
                   {activeTab === "opportunities" && "Featured Opportunities"}
                   {activeTab === "organizations" && "Featured Organizations"}
                 </h3>
-                <p className="text-slate-600 mt-1">        
+                <p className="text-slate-600 mt-1">
                   {loading
                     ? "Loading..."
-                    : `Showing ${Math.min(
-                        (currentPage - 1) * CARDS_PER_PAGE + 1,
-                        filteredOpportunities.length
-                      )}–${Math.min(
-                        currentPage * CARDS_PER_PAGE,
-                        filteredOpportunities.length
-                      )} of ${filteredOpportunities.length} results`
-                  }
+                    : `Showing ${Math.min((currentPage - 1) * CARDS_PER_PAGE + 1, opportunities.length)}–${Math.min(currentPage * CARDS_PER_PAGE, opportunities.length)} of ${opportunities.length} results`}
                 </p>
               </div>
               <select className="px-4 py-2 border border-slate-300 rounded-full text-sm font-medium focus:outline-none focus:border-purple-primary">
@@ -715,156 +813,169 @@ const Discover = () => {
 
             {/* Results Grid */}
             {loading ? (
-              <div className="text-center py-20">
-                <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-purple-dark mt-4">Loading {activeTab}...</p>
-              </div>
-            ) : filteredOpportunities.length === 0 ? (
+              <DiscoverSkeleton />
+            ) : opportunities.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl">
                 <p className="text-xl text-slate-600 mb-4">No results found</p>
-                <p className="text-slate-500">Try adjusting your filters or search query</p>
+                <p className="text-slate-500">
+                  Try adjusting your filters or search query
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {activeTab === "organizations" ? (
-                  // Organization Cards
-                  currentCards.map((org) => (
-                    <div
-                      key={org.id}
-                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden cursor-pointer"
-                      onClick={() => handleOrgClick(org)}
-                    >
-                      {/* Org Logo/Image Placeholder */}
-                      <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
-                        <span className="text-6xl font-bold text-white">{org.name?.charAt(0) || "?"}</span>
-                      </div>
-                      
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-purple-dark mb-2">{org.name}</h3>
-                        <p className="text-slate-600 text-sm mb-4 line-clamp-3">
-                          {org.org_description || "No description available"}
-                        </p>
-                        
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-slate-500">
-                            {org.verified ? "✓ Verified" : "Pending"}
+                {activeTab === "organizations"
+                  ? // Organization Cards
+                    currentCards.map((org) => (
+                      <div
+                        key={org.id}
+                        className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden cursor-pointer"
+                        onClick={() => handleOrgClick(org)}
+                      >
+                        {/* Org Logo/Image Placeholder */}
+                        <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
+                          <span className="text-6xl font-bold text-white">
+                            {org.name?.charAt(0) || "?"}
                           </span>
+                        </div>
 
-                          {( cachedSupaUser.role === "student" ) && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleSaveOrg(org);
-                              }}
-                              disabled={savingOrgIds.includes(String(org.id))}
-                              className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
-                                savedOrgIds.includes(String(org.id))
-                                  ? "bg-gold text-white hover:bg-gold/80"
-                                  : "bg-purple-primary text-white hover:bg-gold"
-                              } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
-                            >
-                              {savingOrgIds.includes(String(org.id)) 
-                                ? "Saving..." 
-                                : savedOrgIds.includes(String(org.id)) 
-                                  ? "Saved ✓" 
-                                  : "Save"
-                              }
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  // Opportunity Cards
-                  currentCards.map((opp) => (
-                    <div
-                      key={opp.id}
-                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden flex flex-col h-full"
-                    >
-                      {/* Image / banner */}
-                      <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30"></div>
-                  
-                      {/* Card body */}
-                      <div className="p-6 flex flex-col flex-1">
-                        {/* Content */}
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-purple-dark mb-2">{opp.title}</h3>
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-purple-dark mb-2">
+                            {org.name}
+                          </h3>
                           <p className="text-slate-600 text-sm mb-4 line-clamp-3">
-                            {opp.description}
+                            {org.org_description || "No description available"}
                           </p>
-                  
-                          {opp.majors?.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              {opp.majors.slice(0, 2).map((major, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
-                                >
-                                  {major}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                  
-                        {/* Buttons pinned to bottom */}
-                        <div className="mt-auto">
-                          {opp.apply_link && cachedSupaUser.role !== "org"  ? (
-                            <div className="w-full flex flex-col gap-3">
-                              {/* Top row */}
-                              <div className="flex flex-col sm:flex-row gap-3">
-                                <a
-                                  href={opp.apply_link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
-                                >
-                                  Apply Now
-                                </a>
-                  
-                                <button
-                                  onClick={(e) => handleToggleSaveOpp(e, opp)}
-                                  disabled={savingOppIds.includes(String(opp.id))}
-                                  className={`flex-1 px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
-                                    savedOppIds.includes(String(opp.id))
-                                      ? "bg-gold text-white hover:bg-gold/80"
-                                      : "bg-slate-200 text-slate-700 hover:bg-purple-100"
-                                  } ${
-                                    savingOppIds.includes(String(opp.id))
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
-                                >
-                                  {savingOppIds.includes(String(opp.id))
-                                    ? "..."
-                                    : savedOppIds.includes(String(opp.id))
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-500">
+                              {org.verified ? "✓ Verified" : "Pending"}
+                            </span>
+
+                            {cachedSupaUser.role === "student" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleSaveOrg(org);
+                                }}
+                                disabled={savingOrgIds.includes(String(org.id))}
+                                className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
+                                  savedOrgIds.includes(String(org.id))
+                                    ? "bg-gold text-white hover:bg-gold/80"
+                                    : "bg-purple-primary text-white hover:bg-gold"
+                                } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                              >
+                                {savingOrgIds.includes(String(org.id))
+                                  ? "Saving..."
+                                  : savedOrgIds.includes(String(org.id))
                                     ? "Saved ✓"
                                     : "Save"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  : // Opportunity Cards
+                    currentCards.map((opp) => (
+                      <div
+                        key={opp.id}
+                        className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden flex flex-col h-full"
+                      >
+                        {/* Image / banner */}
+                        <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 overflow-hidden">
+                          <img 
+                            src={opp.banner_url || defaultBanner} 
+                            alt={opp.title} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        {/* Card body */}
+                        <div className="p-6 flex flex-col flex-1">
+                          {/* Content */}
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-purple-dark mb-2">
+                              {opp.title}
+                            </h3>
+                            <p className="text-slate-600 text-sm mb-4 line-clamp-3">
+                              {opp.description}
+                            </p>
+
+                            {opp.majors?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-4">
+                                {opp.majors.slice(0, 2).map((major, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                                  >
+                                    {major}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Buttons pinned to bottom */}
+                          <div className="mt-auto">
+                            {opp.apply_link && cachedSupaUser.role !== "org" ? (
+                              <div className="w-full flex flex-col gap-3">
+                                {/* Top row */}
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                  <a
+                                    href={opp.apply_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                                  >
+                                    Apply Now
+                                  </a>
+
+                                  <button
+                                    onClick={(e) => handleToggleSaveOpp(e, opp)}
+                                    disabled={savingOppIds.includes(
+                                      String(opp.id),
+                                    )}
+                                    className={`flex-1 px-4 py-2 text-sm rounded-lg font-semibold transition-colors ${
+                                      savedOppIds.includes(String(opp.id))
+                                        ? "bg-gold text-white hover:bg-gold/80"
+                                        : "bg-slate-200 text-slate-700 hover:bg-purple-100"
+                                    } ${
+                                      savingOppIds.includes(String(opp.id))
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : ""
+                                    }`}
+                                  >
+                                    {savingOppIds.includes(String(opp.id))
+                                      ? "..."
+                                      : savedOppIds.includes(String(opp.id))
+                                        ? "Saved ✓"
+                                        : "Save"}
+                                  </button>
+                                </div>
+
+                                {/* Bottom row */}
+                                <button
+                                  onClick={() =>
+                                    navigate(`/opportunity/${opp.id}`)
+                                  }
+                                  className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
+                                >
+                                  View Details
                                 </button>
                               </div>
-                  
-                              {/* Bottom row */}
+                            ) : (
                               <button
-                                onClick={() => navigate(`/opportunity/${opp.id}`)}
+                                onClick={() =>
+                                  navigate(`/opportunity/${opp.id}`)
+                                }
                                 className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
                               >
                                 View Details
                               </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => navigate(`/opportunity/${opp.id}`)}
-                              className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
-                            >
-                              View Details
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))}
               </div>
             )}
 
@@ -887,8 +998,8 @@ const Discover = () => {
                     key={index}
                     pageNumber={page}
                     isActive={page === currentPage}
-                    onClick={() => page !== '...' && goToPage(page)}
-                    isEllipsis={page === '...'}
+                    onClick={() => page !== "..." && goToPage(page)}
+                    isEllipsis={page === "..."}
                   />
                 ))}
 
@@ -905,7 +1016,6 @@ const Discover = () => {
             )}
             {/* --- END NEW: Dynamic Pagination Controls --- */}
           </section>
-          
         </div>
         <OrganizationModal
           selectedOrg={selectedOrg}
@@ -913,8 +1023,12 @@ const Discover = () => {
           orgOpportunities={orgOpportunities}
           loadingOrgDetails={loadingOrgDetails}
           onToggleSave={handleToggleSaveOrg}
-          isSaved={selectedOrg ? savedOrgIds.includes(String(selectedOrg.id)) : false}
-          isSaving={selectedOrg ? savingOrgIds.includes(String(selectedOrg.id)) : false}
+          isSaved={
+            selectedOrg ? savedOrgIds.includes(String(selectedOrg.id)) : false
+          }
+          isSaving={
+            selectedOrg ? savingOrgIds.includes(String(selectedOrg.id)) : false
+          }
         />
       </main>
 

@@ -1,19 +1,27 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { AdminDashboardSkeleton } from "../components/Skeletons";
 import NewNav from "../components/newNav.jsx";
 
+const MIN_LOAD_MS = 300;
 
 export default function AdminDashboard() {
-  const { isAuthenticated, getAccessTokenSilently, user } = useAuth0();
+  const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently, user } = useAuth0();
   const [users, setUsers] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const isAdmin = user?.["https://studentstarter.com/role"] === "admin";
 
   useEffect(() => {
-    if (!isAuthenticated || !isAdmin) return;
+    if (authLoading) return;
+    if (!isAuthenticated || !isAdmin) {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
+      const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
       const token = await getAccessTokenSilently();
 
       const [usersRes, oppsRes] = await Promise.all([
@@ -23,20 +31,25 @@ export default function AdminDashboard() {
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/opportunities`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        minDelay
       ]);
 
       setUsers(await usersRes.json());
       setOpportunities(await oppsRes.json());
+      setLoading(false);
     };
 
     fetchData();
-  }, [isAuthenticated, isAdmin, getAccessTokenSilently]);
+  }, [isAuthenticated, authLoading, isAdmin, getAccessTokenSilently]);
 
-  if (!isAuthenticated) return <p>Please log in.</p>;
-  if (!isAdmin) return <p>Access denied. Admins only.</p>;
+  if (authLoading || loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 mt-20">
+        <AdminDashboardSkeleton />
+      </div>
+    );
+  }
 
-
-  
   return (
     <>
     <NewNav />

@@ -7,9 +7,12 @@ import StudentNav from "../components/StudentNav";
 import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
 import { Bookmark } from "lucide-react";
+import { SavedSkeleton } from "../components/Skeletons";
+
+const MIN_LOAD_MS = 300;
 
 const Saved = () => {
-  const { user, getAccessTokenSilently } = useAuth0();
+  const { user, isLoading: authLoading, getAccessTokenSilently } = useAuth0();
   const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [activeTab, setActiveTab] = useState("opportunities");
   const [savedOpportunities, setSavedOpportunities] = useState([]);
@@ -40,6 +43,7 @@ const Saved = () => {
 
   const fetchAllSavedItems = async (forceRefresh = false) => {
     setLoading(true);
+    const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
     try {
       // Get user's Supabase ID
       const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
@@ -51,16 +55,17 @@ const Saved = () => {
       // Fetch BOTH opportunities AND organizations in parallel
       const [oppsData, orgsData] = await Promise.all([
         fetchSavedOpportunities(userId, forceRefresh),
-        fetchSavedOrganizations(userId, forceRefresh)
+        fetchSavedOrganizations(userId, forceRefresh),
+        minDelay
       ]);
 
       setSavedOpportunities(oppsData);
       setSavedOrganizations(orgsData);
       setSavedOrgIds(orgsData.map(o => String(o.id)));
-
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching saved items:", error);
+      await minDelay;
+    } finally {
       setLoading(false);
     }
   };
@@ -268,11 +273,8 @@ const Saved = () => {
         </div>
 
         {/* Content */}
-        {loading ? (
-          <div className="text-center py-20">
-            <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-purple-dark mt-4">Loading saved items...</p>
-          </div>
+        {loading || authLoading ? (
+          <SavedSkeleton />
         ) : (
           <div>
             {activeTab === "opportunities" ? (
