@@ -5,6 +5,9 @@ import defaultBanner from "../assets/SSP Wallpaper.png";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
+// TODO: Image upload feature is not finished — currently uses a fixed preview
+// dimension (h-48). Need to adjust for dynamic image dimensions / aspect-ratio
+// cropping instead of a hardcoded size.
 const ImageUpload = ({ currentUrl, onUpload, entityType, entityId, getToken, entityName }) => {
   const [preview, setPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -128,7 +131,7 @@ const ImageUpload = ({ currentUrl, onUpload, entityType, entityId, getToken, ent
             disabled={!entityId}
             className="flex items-center gap-2 px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm disabled:opacity-50"
           >
-            <Upload size={16} />
+            <Upload size={14} />
             {entityId ? "Upload Banner" : "Save profile first to upload"}
           </button>
           <button

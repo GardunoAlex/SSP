@@ -6,6 +6,16 @@ import { getSupabaseUser } from "../lib/apiHelpers";
 import { OrgModalSkeleton } from "./Skeletons";
 import defaultBanner from "../assets/SSP Wallpaper.png";
 
+// TODO: Banner image dimensions are fixed (h-64). Still need to adjust for
+// dynamic image dimensions instead of a hardcoded size.
+// Pattern wallpapers get contain+repeat so logos stay clear; uploaded photos use cover
+const getBannerStyle = (url) => ({
+  backgroundImage: `url(${url})`,
+  backgroundSize: url.includes("Wallpaper") ? "contain" : "cover",
+  backgroundPosition: "center",
+  backgroundRepeat: url.includes("Wallpaper") ? "repeat" : "no-repeat",
+});
+
 const OrganizationModal = ({
   selectedOrg,
   setSelectedOrg,
@@ -27,13 +37,11 @@ const OrganizationModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative h-64 overflow-hidden flex items-center justify-center">
-          <img 
-            src={selectedOrg.banner_url || defaultBanner} 
-            alt="Organization Banner" 
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/30" /> 
+        <div
+          className="relative h-64 overflow-hidden flex items-center justify-center"
+          style={getBannerStyle(selectedOrg.banner_url || defaultBanner)}
+        >
+          <div className="absolute inset-0 bg-black/30" />
           
           <button
             onClick={() => setSelectedOrg(null)}

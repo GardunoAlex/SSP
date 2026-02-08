@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +15,7 @@ const CreateOpportunity = () => {
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const imageUploadRef = useRef(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -28,8 +29,6 @@ const CreateOpportunity = () => {
   });
 
   const [majorInput, setMajorInput] = useState("");
-  const [bannerFile, setBannerFile] = useState(null);
-  const [bannerPreview, setBannerPreview] = useState(null);
 
   const MAJORS = [
     "Technology",
@@ -78,22 +77,6 @@ const CreateOpportunity = () => {
     setFormData({ ...formData, majors: formData.majors.filter(m => m !== major) });
   };
 
-  const handleBannerSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.type)) {
-      alert("Invalid file type. Use JPEG, PNG, WebP, or GIF.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File too large. Maximum size is 5MB.");
-      return;
-    }
-    setBannerFile(file);
-    setBannerPreview(URL.createObjectURL(file));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -116,7 +99,8 @@ const CreateOpportunity = () => {
       if (!res.ok) throw new Error("Failed to create opportunity");
       const newOpp = await res.json();
 
-      // Upload banner if a file was selected
+      // Upload banner if a file was selected (cropped via ImageUpload ref)
+      const bannerFile = await imageUploadRef.current?.getFile();
       if (bannerFile && newOpp.id) {
         const bannerForm = new FormData();
         bannerForm.append("image", bannerFile);
@@ -181,18 +165,20 @@ const CreateOpportunity = () => {
           <p className="text-slate-600 mb-8">Fill out the details below to post a new opportunity</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/*Image upload */}
+            {/* TODO: Image upload not finished — need to handle dynamic image
+               dimensions / aspect-ratio cropping instead of fixed size */}
             <div className="mb-8">
-              <ImageUpload 
-                currentUrl={bannerPreview} 
-                onUpload={(url) => setBannerPreview(url)} // This handles the local preview
+              <ImageUpload
+                ref={imageUploadRef}
+                currentUrl={null}
+                onUpload={() => {}}
                 entityType="opportunity"
-                entityId={null} // Set to null because the ID isn't created yet
+                entityId={null}
                 entityName={formData.title || "New Opportunity"}
                 getToken={getAccessTokenSilently}
               />
               <p className="text-xs text-slate-500 mt-2 italic">
-                * Note: Banner will be finalized once the opportunity is created.
+                * Banner will be uploaded once the opportunity is created.
               </p>
             </div>
             {/* Title */}
