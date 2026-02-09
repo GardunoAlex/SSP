@@ -388,26 +388,34 @@ const Discover = () => {
   };
 
   const filteredOpportunities = useMemo(() => {
-    return opportunities.filter((opp) => {
-      // 🔍 SEARCH
+    return opportunities.filter((item) => {
+      // 🔍 SEARCH — different fields depending on active tab
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const haystack =
-          `${opp.title} ${opp.description} ${opp.organization_name ?? ""}`.toLowerCase();
 
-        if (!haystack.includes(q)) return false;
+        if (activeTab === "organizations") {
+          const haystack = `${item.name ?? ""} ${item.org_description ?? ""} ${item.email ?? ""}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        } else {
+          const majorsStr = item.majors?.join(" ") ?? "";
+          const haystack = `${item.title ?? ""} ${item.description ?? ""} ${majorsStr} ${item.organization_name ?? ""}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
       }
+
+      // Filters only apply to opportunities
+      if (activeTab === "organizations") return true;
 
       // 🎓 Class Year
       if (
         filters.classYear.length > 0 &&
-        !filters.classYear.includes(opp.class_year)
+        !filters.classYear.includes(item.class_year)
       )
         return false;
 
       // 📊 GPA
       if (filters.gpa && filters.gpa !== "none") {
-        const raw = opp.gpa_requirement;
+        const raw = item.gpa_requirement;
         const parsed =
           raw == null
             ? null
@@ -423,28 +431,28 @@ const Discover = () => {
       // 🏭 Industry
       if (
         filters.majors?.length > 0 &&
-        !opp.majors?.some((m) => filters.majors.includes(m))
+        !item.majors?.some((m) => filters.majors.includes(m))
       )
         return false;
 
       // 🧭 Opportunity Type
       if (
         filters.opportunityType.length > 0 &&
-        !filters.opportunityType.includes(opp.type)
+        !filters.opportunityType.includes(item.type)
       )
         return false;
 
       // 🌍 Location
-      if (filters.location !== "all" && opp.location !== filters.location)
+      if (filters.location !== "all" && item.location !== filters.location)
         return false;
 
       // 💵 Compensation
-      if (filters.compensation && opp.compensation !== filters.compensation)
+      if (filters.compensation && item.compensation !== filters.compensation)
         return false;
 
       return true;
     });
-  }, [opportunities, filters, searchQuery]);
+  }, [opportunities, filters, searchQuery, activeTab]);
 
   const totalPages = Math.ceil(filteredOpportunities.length / CARDS_PER_PAGE);
 
