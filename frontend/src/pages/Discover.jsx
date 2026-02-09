@@ -18,6 +18,7 @@ import OrganizationModal from "../components/OrganizationModal";
 import { DiscoverSkeleton } from "../components/Skeletons";
 import { useNavigate } from "react-router-dom";
 import defaultBanner from "../assets/SSP Wallpaper.png";
+import defaultOrgBanner from "../assets/PurpleSSP_WP.png";
 
 const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
@@ -34,11 +35,16 @@ const Discover = () => {
   const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } =
     useAuth0();
   const [selectedOrg, setSelectedOrg] = useState(null);
-  // defaulting this value to student default. -> so that it doens't break during compiling
   const [cachedSupaUser, setCachedSupaUser] = useLocalStorage(
     "supaUser",
-    "student",
+    null,
   );
+
+  // Ensure cachedSupaUser is a valid user object, not a stale string from old defaults
+  const validSupaUser = cachedSupaUser && typeof cachedSupaUser === "object" && cachedSupaUser.id
+    ? cachedSupaUser
+    : null;
+
   const [savedOrgIds, setSavedOrgIds] = useLocalStorage("savedOrgIds", []);
   const [savingOrgIds, setSavingOrgIds] = useState([]);
   const [orgOpportunities, setOrgOpportunities] = useState([]);
@@ -83,8 +89,8 @@ const Discover = () => {
       if (!user) return;
       try {
         const supaUser =
-          cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
-        if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+          validSupaUser || (await getSupabaseUser(getAccessTokenSilently));
+        if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
         const userId = supaUser?.id;
         if (!userId) return setSavedOrgIds([]);
         const res = await fetch(
@@ -105,8 +111,8 @@ const Discover = () => {
       if (!user) return;
       try {
         const supaUser =
-          cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
-        if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+          validSupaUser || (await getSupabaseUser(getAccessTokenSilently));
+        if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
         const userId = supaUser?.id;
         if (!userId) return setSavedOppIds([]);
 
@@ -132,8 +138,8 @@ const Discover = () => {
         (async () => {
           try {
             const supaUser =
-              cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
-            if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+              validSupaUser || (await getSupabaseUser(getAccessTokenSilently));
+            if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
             const userId = supaUser?.id;
             if (!userId) return setSavedOrgIds([]);
             const res = await fetch(
@@ -256,8 +262,8 @@ const Discover = () => {
       setSavingOppIds((prev) => [...prev, String(opp.id)]);
 
       const supaUser =
-        cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
-      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+        validSupaUser || (await getSupabaseUser(getAccessTokenSilently));
+      if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
       if (!userId) throw new Error("Unable to get user id");
       const alreadySaved = savedOppIds.includes(String(opp.id));
@@ -309,8 +315,8 @@ const Discover = () => {
       setSavingOrgIds((prev) => [...prev, String(org.id)]);
 
       const supaUser =
-        cachedSupaUser || (await getSupabaseUser(getAccessTokenSilently));
-      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+        validSupaUser || (await getSupabaseUser(getAccessTokenSilently));
+      if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
       if (!userId) throw new Error("Unable to get user id");
       if (!userId) throw new Error("Unable to get user id");
@@ -382,26 +388,34 @@ const Discover = () => {
   };
 
   const filteredOpportunities = useMemo(() => {
-    return opportunities.filter((opp) => {
-      // 🔍 SEARCH
+    return opportunities.filter((item) => {
+      // 🔍 SEARCH — different fields depending on active tab
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const haystack =
-          `${opp.title} ${opp.description} ${opp.organization_name ?? ""}`.toLowerCase();
 
-        if (!haystack.includes(q)) return false;
+        if (activeTab === "organizations") {
+          const haystack = `${item.name ?? ""} ${item.org_description ?? ""} ${item.email ?? ""}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        } else {
+          const majorsStr = item.majors?.join(" ") ?? "";
+          const haystack = `${item.title ?? ""} ${item.description ?? ""} ${majorsStr} ${item.organization_name ?? ""}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
       }
+
+      // Filters only apply to opportunities
+      if (activeTab === "organizations") return true;
 
       // 🎓 Class Year
       if (
         filters.classYear.length > 0 &&
-        !filters.classYear.includes(opp.class_year)
+        !filters.classYear.includes(item.class_year)
       )
         return false;
 
       // 📊 GPA
       if (filters.gpa && filters.gpa !== "none") {
-        const raw = opp.gpa_requirement;
+        const raw = item.gpa_requirement;
         const parsed =
           raw == null
             ? null
@@ -417,28 +431,28 @@ const Discover = () => {
       // 🏭 Industry
       if (
         filters.majors?.length > 0 &&
-        !opp.majors?.some((m) => filters.majors.includes(m))
+        !item.majors?.some((m) => filters.majors.includes(m))
       )
         return false;
 
       // 🧭 Opportunity Type
       if (
         filters.opportunityType.length > 0 &&
-        !filters.opportunityType.includes(opp.type)
+        !filters.opportunityType.includes(item.type)
       )
         return false;
 
       // 🌍 Location
-      if (filters.location !== "all" && opp.location !== filters.location)
+      if (filters.location !== "all" && item.location !== filters.location)
         return false;
 
       // 💵 Compensation
-      if (filters.compensation && opp.compensation !== filters.compensation)
+      if (filters.compensation && item.compensation !== filters.compensation)
         return false;
 
       return true;
     });
-  }, [opportunities, filters, searchQuery]);
+  }, [opportunities, filters, searchQuery, activeTab]);
 
   const totalPages = Math.ceil(filteredOpportunities.length / CARDS_PER_PAGE);
 
@@ -823,13 +837,26 @@ const Discover = () => {
                       <div
                         key={org.id}
                         className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden cursor-pointer"
-                        onClick={() => handleOrgClick(org)}
+                        onClick={() => {
+                          if (validSupaUser?.id === org.id) {
+                            navigate("/org/dashboard");
+                          } else {
+                            handleOrgClick(org);
+                          }
+                        }}
                       >
-                        {/* Org Logo/Image Placeholder */}
-                        <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
-                          <span className="text-6xl font-bold text-white">
-                            {org.name?.charAt(0) || "?"}
-                          </span>
+                        {/* Org Banner */}
+                        <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 overflow-hidden relative">
+                          <img
+                            src={org.banner_url || defaultOrgBanner}
+                            alt={org.name}
+                            className="w-full h-full object-cover"
+                          />
+                          {!org.banner_url && (
+                            <span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-white/90">
+                              {org.name?.charAt(0) || "?"}
+                            </span>
+                          )}
                         </div>
 
                         <div className="p-6">
@@ -845,26 +872,59 @@ const Discover = () => {
                               {org.verified ? "✓ Verified" : "Pending"}
                             </span>
 
-                            {cachedSupaUser.role === "student" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleSaveOrg(org);
-                                }}
-                                disabled={savingOrgIds.includes(String(org.id))}
-                                className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
-                                  savedOrgIds.includes(String(org.id))
-                                    ? "bg-gold text-white hover:bg-gold/80"
-                                    : "bg-purple-primary text-white hover:bg-gold"
-                                } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
-                              >
-                                {savingOrgIds.includes(String(org.id))
-                                  ? "Saving..."
-                                  : savedOrgIds.includes(String(org.id))
-                                    ? "Saved ✓"
-                                    : "Save"}
-                              </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {validSupaUser?.role === "admin" && (
+                                <button
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    if (!window.confirm(`Remove "${org.name}"? This will delete the organization and all its opportunities.`)) return;
+                                    try {
+                                      const token = await getAccessTokenSilently();
+                                      const res = await fetch(
+                                        `${import.meta.env.VITE_API_BASE_URL}/api/admin/organization/${org.id}`,
+                                        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+                                      );
+                                      if (!res.ok) throw new Error("Failed to remove organization");
+                                      await fetchOpportunities();
+                                    } catch (err) {
+                                      console.error("Error removing organization:", err);
+                                    }
+                                  }}
+                                  className="px-4 py-2 text-sm rounded-full font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              )}
+
+                              {validSupaUser?.id === org.id && (
+                                <span className="px-4 py-2 text-sm rounded-full font-semibold bg-purple-primary text-white">
+                                  Edit
+                                </span>
+                              )}
+
+                              {validSupaUser?.role === "student" && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleSaveOrg(org);
+                                  }}
+                                  disabled={savingOrgIds.includes(String(org.id))}
+                                  className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${
+                                    savedOrgIds.includes(String(org.id))
+                                      ? "bg-gold text-white hover:bg-gold/80"
+                                      : "bg-purple-primary text-white hover:bg-gold"
+                                  } ${savingOrgIds.includes(String(org.id)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                                >
+                                  {savingOrgIds.includes(String(org.id))
+                                    ? "Saving..."
+                                    : savedOrgIds.includes(String(org.id))
+                                      ? "Saved ✓"
+                                      : "Save"}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -875,11 +935,11 @@ const Discover = () => {
                         key={opp.id}
                         className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden flex flex-col h-full"
                       >
-                        {/* Image / banner */}
+                        {/* Opportunity Banner */}
                         <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 overflow-hidden">
-                          <img 
-                            src={opp.banner_url || defaultBanner} 
-                            alt={opp.title} 
+                          <img
+                            src={opp.banner_url || defaultBanner}
+                            alt={opp.title}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -908,9 +968,32 @@ const Discover = () => {
                             )}
                           </div>
 
+                          {/* Admin remove button */}
+                          {validSupaUser?.role === "admin" && (
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm(`Remove "${opp.title}"? This will permanently delete this opportunity.`)) return;
+                                try {
+                                  const token = await getAccessTokenSilently();
+                                  const res = await fetch(
+                                    `${import.meta.env.VITE_API_BASE_URL}/api/admin/opportunity/${opp.id}`,
+                                    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+                                  );
+                                  if (!res.ok) throw new Error("Failed to remove opportunity");
+                                  await fetchOpportunities();
+                                } catch (err) {
+                                  console.error("Error removing opportunity:", err);
+                                }
+                              }}
+                              className="w-full mb-2 px-4 py-2 text-sm rounded-lg font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                            >
+                              Remove
+                            </button>
+                          )}
+
                           {/* Buttons pinned to bottom */}
                           <div className="mt-auto">
-                            {opp.apply_link && cachedSupaUser.role !== "org" ? (
+                            {opp.apply_link && validSupaUser?.role !== "org" ? (
                               <div className="w-full flex flex-col gap-3">
                                 {/* Top row */}
                                 <div className="flex flex-col sm:flex-row gap-3">
@@ -949,21 +1032,29 @@ const Discover = () => {
                                 {/* Bottom row */}
                                 <button
                                   onClick={() =>
-                                    navigate(`/opportunity/${opp.id}`)
+                                    navigate(
+                                      validSupaUser?.id === opp.org_id
+                                        ? `/org/edit-opportunity/${opp.id}`
+                                        : `/opportunity/${opp.id}`
+                                    )
                                   }
                                   className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
                                 >
-                                  View Details
+                                  {validSupaUser?.id === opp.org_id ? "Edit" : "View Details"}
                                 </button>
                               </div>
                             ) : (
                               <button
                                 onClick={() =>
-                                  navigate(`/opportunity/${opp.id}`)
+                                  navigate(
+                                    validSupaUser?.id === opp.org_id
+                                      ? `/org/edit-opportunity/${opp.id}`
+                                      : `/opportunity/${opp.id}`
+                                  )
                                 }
                                 className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
                               >
-                                View Details
+                                {validSupaUser?.id === opp.org_id ? "Edit" : "View Details"}
                               </button>
                             )}
                           </div>

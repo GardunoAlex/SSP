@@ -118,6 +118,63 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      {/* Organizations Table */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">All Organizations</h2>
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="w-full bg-white table-fixed">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-3 text-left w-[25%]">Name</th>
+                <th className="p-3 text-left w-[35%]">Email</th>
+                <th className="p-3 text-left w-[15%]">Verified</th>
+                <th className="p-3 text-left w-[25%]">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} className="border-t">
+                  <td className="p-3 truncate">{u.name}</td>
+                  <td className="p-3 truncate">{u.email}</td>
+                  <td className="p-3">
+                    {u.verified ? (
+                      <span className="text-green-600 font-medium">Yes</span>
+                    ) : (
+                      <span className="text-yellow-600 font-medium">No</span>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    <button
+                      className="text-red-500 hover:underline font-medium"
+                      onClick={async () => {
+                        if (!window.confirm(`Remove "${u.name}"? This will delete the organization and all its opportunities.`)) return;
+                        try {
+                          const token = await getAccessTokenSilently();
+                          const res = await fetch(
+                            `${import.meta.env.VITE_API_BASE_URL}/api/admin/organization/${u.id}`,
+                            {
+                              method: "DELETE",
+                              headers: { Authorization: `Bearer ${token}` },
+                            }
+                          );
+                          if (!res.ok) throw new Error("Failed to remove organization");
+                          setUsers((prev) => prev.filter((user) => user.id !== u.id));
+                          setOpportunities((prev) => prev.filter((opp) => opp.org_id !== u.id));
+                        } catch (err) {
+                          console.error("Error removing organization:", err);
+                        }
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       {/* Opportunities Table */}
       <section>
         <h2 className="text-xl font-semibold mb-4">All Opportunities</h2>
