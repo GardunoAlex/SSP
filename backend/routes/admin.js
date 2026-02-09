@@ -52,6 +52,35 @@ router.patch("/verify/:id", async (req, res) => {
   }
 });
 
+// ✅ Remove organization (and all related data via cascade)
+router.delete("/organization/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Verify the user is actually an org before deleting
+    const { data: org, error: lookupError } = await supabase
+      .from("users")
+      .select("id, role")
+      .eq("id", id)
+      .eq("role", "org")
+      .single();
+
+    if (lookupError || !org) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+    res.json({ message: "Organization removed successfully" });
+  } catch (err) {
+    console.error("Error removing organization:", err);
+    res.status(500).json({ error: "Failed to remove organization" });
+  }
+});
+
 // ✅ Close opportunity (soft delete)
 router.patch("/opportunity/:id/close", async (req, res) => {
   const { id } = req.params;
@@ -66,6 +95,23 @@ router.patch("/opportunity/:id/close", async (req, res) => {
   } catch (err) {
     console.error("Error closing opportunity:", err);
     res.status(500).json({ error: "Failed to close opportunity" });
+  }
+});
+
+// ✅ Remove opportunity
+router.delete("/opportunity/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase
+      .from("opportunities")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+    res.json({ message: "Opportunity removed successfully" });
+  } catch (err) {
+    console.error("Error removing opportunity:", err);
+    res.status(500).json({ error: "Failed to remove opportunity" });
   }
 });
 

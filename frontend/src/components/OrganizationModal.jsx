@@ -4,7 +4,7 @@ import useLocalStorage from "../hooks/useLocalStorage";
 import { clearCached, fetchWithCache } from "../lib/apiCache";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { OrgModalSkeleton } from "./Skeletons";
-import defaultBanner from "../assets/SSP Wallpaper.png";
+import defaultBanner from "../assets/PurpleSSP_WP.png";
 
 // TODO: Banner image dimensions are fixed (h-64). Still need to adjust for
 // dynamic image dimensions instead of a hardcoded size.

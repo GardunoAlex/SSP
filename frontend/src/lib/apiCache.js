@@ -29,7 +29,7 @@ export function clearAllCached() {
   cache.clear();
 }
 
-export async function fetchWithCache(key, url, options = {}, ttl = 120000, skipCache = false) {
+export async function fetchWithCache(key, url, options = {}, ttl = 120000, skipCache = true) {
   const k = makeKey(key);
   if (!skipCache) {
     const cached = getCached(k);

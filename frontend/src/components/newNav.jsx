@@ -4,6 +4,7 @@ import StudentNav from "./StudentNav";
 import PublicNav from "./PublicNav";
 import { NavSkeleton } from "./Skeletons";
 import OrgNav from "./OrgNav";
+import AdminNav from "./AdminNav";
 
 const NewNav = () => {
   const { isAuthenticated, isLoading: authLoading, user, logout, getAccessTokenSilently } = useAuth0();
@@ -58,9 +59,7 @@ const NewNav = () => {
   } else if (isAuthenticated && role == "org") {
     return <OrgNav />;
   } else if (isAuthenticated && role == "admin"){
-    return <StudentNav />;  // TODO: Add the nav for admin. 
-  }{
-    <StudentNav />;
+    return <AdminNav />;
   }
 
   // Default is public nav
