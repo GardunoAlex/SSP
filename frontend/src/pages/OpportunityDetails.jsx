@@ -250,6 +250,21 @@ export default function OpportunityDetails() {
               </span>{" "}
               {opportunity.gpa_requirement || "N/A"}
             </p>
+            {opportunity.compensation ? (
+              <p>
+                <span className="font-semibold text-purple-dark">
+                  Compensation:
+                </span>{" "}
+                {opportunity.compensation}
+              </p>
+            ) : (
+              <p>
+                <span className="font-semibold text-purple-dark">
+                  Compensation:
+                </span>{" "}
+                N/A
+              </p>
+            )}
             {opportunity.majors?.length > 0 && (
               <p>
                 <span className="font-semibold text-purple-dark">
