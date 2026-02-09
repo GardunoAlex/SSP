@@ -38,11 +38,17 @@ const OrgDashboard = () => {
     try {
       const supaUser = await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
-      const userId = supaUser?.id;
-      if (!userId) throw new Error('Could not resolve user id');
 
-      // Fetch organization profile from Supabase
-      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      const token = await getAccessTokenSilently();
+
+      const orgRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/organizations/private`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       
       if (!orgRes.ok) {
         throw new Error(`Failed to fetch organization: ${orgRes.status}`);
@@ -60,7 +66,7 @@ const OrgDashboard = () => {
         });
 
         // Fetch organization's opportunities
-        const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${userId}`);
+        const oppsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/org/${orgData.id}`);
         if (oppsRes.ok) {
           const oppsData = await oppsRes.json();
           setOpportunities(oppsData);
