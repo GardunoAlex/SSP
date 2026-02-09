@@ -8,7 +8,7 @@ router.get("/", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, org_description, website, verified")
+      .select("id, name, email, org_description, website, verified, banner_url")
       .eq("role", "org")
       .eq("verified", true);
 
@@ -45,7 +45,7 @@ router.get("/:id", async (req, res) => {
     const { id } = req.params;
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, org_description, website, verified")
+      .select("id, name, email, org_description, website, verified, banner_url")
       .eq("id", id)
       .eq("role", "org")
       .single();

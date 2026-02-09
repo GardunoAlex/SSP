@@ -4,6 +4,10 @@ import { Building2, Plus, Edit, Trash2, Eye } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import Footer from "../components/Footer";
+import { OrgDashboardSkeleton } from "../components/Skeletons";
+import ImageUpload from "../components/ImageUpload";
+
+const MIN_LOAD_MS = 300;
 import NewNav from "../components/newNav.jsx";
 
 const OrgDashboard = () => {
@@ -30,7 +34,7 @@ const OrgDashboard = () => {
 
   const fetchOrgData = async () => {
     setLoading(true);
-    setError(null);
+    const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
     try {
       const supaUser = await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
@@ -45,7 +49,7 @@ const OrgDashboard = () => {
       }
       
       const orgData = await orgRes.json();
-      
+
       if (orgData) {
         setOrganization(orgData);
         setProfileForm({
@@ -65,10 +69,11 @@ const OrgDashboard = () => {
         throw new Error("No organization data returned");
       }
 
-      setLoading(false);
+      await minDelay;
     } catch (error) {
       console.error("Error fetching org data:", error);
-      setError(error.message);
+      await minDelay;
+    } finally {
       setLoading(false);
     }
   };
@@ -98,6 +103,10 @@ const OrgDashboard = () => {
     }
   };
 
+  const handleBannerUpload = (banner_url) => {
+    setOrganization(prev => ({ ...prev, banner_url }));
+  };
+
   const handleDeleteOpportunity = async (oppId) => {
     if (!confirm("Are you sure you want to delete this opportunity?")) return;
 
@@ -121,10 +130,9 @@ const OrgDashboard = () => {
     return (
       <div className="min-h-screen bg-cream">
         <NewNav />
-        <div className="text-center py-20">
-          <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-purple-dark mt-4">Loading dashboard...</p>
-        </div>
+        <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
+          <OrgDashboardSkeleton />
+        </main>
       </div>
     );
   }
@@ -263,6 +271,14 @@ const OrgDashboard = () => {
                 </div>
               </div>
 
+              <ImageUpload
+                currentUrl={organization.banner_url}
+                onUpload={handleBannerUpload}
+                entityType="org"
+                entityId={organization.id}
+                getToken={getAccessTokenSilently}
+              />
+
               <button
                 type="submit"
                 className="w-full px-6 py-3 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-lg"
@@ -374,6 +390,14 @@ const OrgDashboard = () => {
                   />
                 </div>
 
+                <ImageUpload
+                  currentUrl={organization.banner_url}
+                  onUpload={handleBannerUpload}
+                  entityType="org"
+                  entityId={organization.id}
+                  getToken={getAccessTokenSilently}
+                />
+
                 <div className="flex gap-4">
                   <button
                     type="submit"
@@ -400,6 +424,17 @@ const OrgDashboard = () => {
               </form>
             ) : (
               <div className="space-y-4">
+                {organization.banner_url && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-500 mb-1">Banner</h3>
+                    <img
+                      src={organization.banner_url}
+                      alt="Organization banner"
+                      className="w-full h-48 object-cover rounded-xl"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <h3 className="text-sm font-semibold text-slate-500 mb-1">Description</h3>
                   <p className="text-slate-700">{organization.org_description || "No description"}</p>

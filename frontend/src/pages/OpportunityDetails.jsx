@@ -9,6 +9,7 @@ import Footer from "../components/Footer";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Star } from 'lucide-react';
 import { MessageSquarePlus } from 'lucide-react';
+import { OpportunityDetailsSkeleton } from "../components/Skeletons";
 
 
 export default function OpportunityDetails() {
@@ -161,9 +162,11 @@ export default function OpportunityDetails() {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-cream">
+      <div className="min-h-screen bg-cream pt-20">
         <NewNav />
-        <p className="text-center mt-32 text-purple-dark">Loading...</p>
+        <div className="max-w-6xl mx-auto px-6 pb-20">
+          <OpportunityDetailsSkeleton />
+        </div>
       </div>
     );
 

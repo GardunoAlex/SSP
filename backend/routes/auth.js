@@ -81,6 +81,13 @@ router.post("/sync", async (req, res) => {
       let userData;
 
       if (existingUser) {
+        // Prevent role conflicts — same Auth0 account can't be both student and org
+        if (existingUser.role !== role) {
+          return res.status(409).json({
+            error: "role_conflict",
+            message: `This email is already registered as a ${existingUser.role}. Please use a different email to sign up as ${role === "org" ? "an organization" : "a student"}.`,
+          });
+        }
         userData = existingUser;
       } else {
         const insertData = {

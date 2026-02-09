@@ -1,19 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowLeft } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
-import OrgNav from "../components/OrgNav";
+import NewNav from "../components/newNav.jsx";
 import Footer from "../components/Footer";
+import ImageUpload from "../components/ImageUpload.jsx";
 
 const CreateOpportunity = () => {
   const navigate = useNavigate();
   const { user, getAccessTokenSilently } = useAuth0();
-  const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
+  const [, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const imageUploadRef = useRef(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -44,15 +46,18 @@ const CreateOpportunity = () => {
 
   const fetchOrgData = async () => {
     try {
-      const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
-      if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
+      // Always fetch fresh to avoid stale cache from a different account/role
+      const supaUser = await getSupabaseUser(getAccessTokenSilently);
+      if (supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
+      if (!userId) throw new Error("Could not resolve user id");
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/user/${userId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
+      if (!res.ok) throw new Error(`Failed to fetch organization: ${res.status}`);
       const data = await res.json();
-      
-      if (data && data.length > 0) {
-        setOrganization(data[0]);
+
+      if (data) {
+        setOrganization(data);
       }
       setLoading(false);
     } catch (error) {
@@ -92,6 +97,22 @@ const CreateOpportunity = () => {
       });
 
       if (!res.ok) throw new Error("Failed to create opportunity");
+      const newOpp = await res.json();
+
+      // Upload banner if a file was selected (cropped via ImageUpload ref)
+      const bannerFile = await imageUploadRef.current?.getFile();
+      if (bannerFile && newOpp.id) {
+        const bannerForm = new FormData();
+        bannerForm.append("image", bannerFile);
+        bannerForm.append("entity_type", "opportunity");
+        bannerForm.append("entity_id", newOpp.id);
+
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/upload/banner`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: bannerForm,
+        });
+      }
 
       alert("Opportunity created successfully!");
       navigate("/org/dashboard");
@@ -105,7 +126,7 @@ const CreateOpportunity = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="text-center py-20">
           <div className="inline-block w-12 h-12 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -116,7 +137,7 @@ const CreateOpportunity = () => {
   if (!organization) {
     return (
       <div className="min-h-screen bg-cream">
-        <OrgNav />
+        <NewNav />
         <div className="max-w-4xl mx-auto px-6 py-20 pt-32 text-center">
           <h1 className="text-3xl font-bold text-purple-dark mb-4">No Organization Found</h1>
           <p className="text-slate-600">Please contact support to set up your organization.</p>
@@ -128,7 +149,7 @@ const CreateOpportunity = () => {
 
   return (
     <div className="min-h-screen bg-cream">
-      <OrgNav />
+      <NewNav />
 
       <main className="max-w-4xl mx-auto px-6 py-12 pt-28">
         <button
@@ -144,6 +165,22 @@ const CreateOpportunity = () => {
           <p className="text-slate-600 mb-8">Fill out the details below to post a new opportunity</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* TODO: Image upload not finished — need to handle dynamic image
+               dimensions / aspect-ratio cropping instead of fixed size */}
+            <div className="mb-8">
+              <ImageUpload
+                ref={imageUploadRef}
+                currentUrl={null}
+                onUpload={() => {}}
+                entityType="opportunity"
+                entityId={null}
+                entityName={formData.title || "New Opportunity"}
+                getToken={getAccessTokenSilently}
+              />
+              <p className="text-xs text-slate-500 mt-2 italic">
+                * Banner will be uploaded once the opportunity is created.
+              </p>
+            </div>
             {/* Title */}
             <div>
               <label className="block text-sm font-semibold text-purple-dark mb-2">

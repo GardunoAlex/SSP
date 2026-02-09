@@ -2,15 +2,17 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useState, useEffect } from "react";
 import StudentNav from "./StudentNav";
 import PublicNav from "./PublicNav";
+import { NavSkeleton } from "./Skeletons";
 import OrgNav from "./OrgNav";
 
 const NewNav = () => {
-  const { isAuthenticated, user, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated, isLoading: authLoading, user, logout, getAccessTokenSilently } = useAuth0();
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
+      if (authLoading) return;
       if (!isAuthenticated) {
         setLoading(false);
         return;
@@ -22,8 +24,16 @@ const NewNav = () => {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (res.status === 409) {
+          const errData = await res.json();
+          alert(errData.message || "This email is already registered with a different role.");
+          logout({ logoutParams: { returnTo: window.location.origin } });
+          return;
+        }
+
         const data = await res.json();
-        const supaUser = data?.data?.[0];
+        const supaUser = data?.data;
 
         const roleFromAuth0 = user?.["https://studentstarter.com/role"];
         const roleFromSupabase = supaUser?.role;
@@ -36,17 +46,10 @@ const NewNav = () => {
     };
 
     fetchUserRole();
-  }, [isAuthenticated, user, getAccessTokenSilently]);
+  }, [isAuthenticated, authLoading, user, getAccessTokenSilently]);
 
-  // Show loading state
-  if (loading && isAuthenticated) {
-    return (
-      <nav className="bg-cream shadow-sm fixed w-full top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-5 flex justify-center">
-          <div className="w-8 h-8 border-4 border-purple-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </nav>
-    );
+  if (authLoading || (loading && isAuthenticated)) {
+    return <NavSkeleton />;
   }
 
   // Render appropriate nav based on role
