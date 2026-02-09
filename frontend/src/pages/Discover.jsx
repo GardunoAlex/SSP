@@ -843,7 +843,13 @@ const Discover = () => {
                       <div
                         key={org.id}
                         className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-primary overflow-hidden cursor-pointer"
-                        onClick={() => handleOrgClick(org)}
+                        onClick={() => {
+                          if (validSupaUser?.id === org.id) {
+                            navigate("/org/dashboard");
+                          } else {
+                            handleOrgClick(org);
+                          }
+                        }}
                       >
                         {/* Org Banner */}
                         <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 overflow-hidden relative">
@@ -896,6 +902,12 @@ const Discover = () => {
                                 >
                                   Remove
                                 </button>
+                              )}
+
+                              {validSupaUser?.id === org.id && (
+                                <span className="px-4 py-2 text-sm rounded-full font-semibold bg-purple-primary text-white">
+                                  Edit
+                                </span>
                               )}
 
                               {validSupaUser?.role === "student" && (
@@ -1026,21 +1038,29 @@ const Discover = () => {
                                 {/* Bottom row */}
                                 <button
                                   onClick={() =>
-                                    navigate(`/opportunity/${opp.id}`)
+                                    navigate(
+                                      validSupaUser?.id === opp.org_id
+                                        ? `/org/edit-opportunity/${opp.id}`
+                                        : `/opportunity/${opp.id}`
+                                    )
                                   }
                                   className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
                                 >
-                                  View Details
+                                  {validSupaUser?.id === opp.org_id ? "Edit" : "View Details"}
                                 </button>
                               </div>
                             ) : (
                               <button
                                 onClick={() =>
-                                  navigate(`/opportunity/${opp.id}`)
+                                  navigate(
+                                    validSupaUser?.id === opp.org_id
+                                      ? `/org/edit-opportunity/${opp.id}`
+                                      : `/opportunity/${opp.id}`
+                                  )
                                 }
                                 className="w-full text-center px-4 py-2 bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold text-sm"
                               >
-                                View Details
+                                {validSupaUser?.id === opp.org_id ? "Edit" : "View Details"}
                               </button>
                             )}
                           </div>
