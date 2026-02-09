@@ -52,6 +52,11 @@ export default function AdminDashboard() {
 
   return (
     <>
+
+
+
+    {isAdmin ? (
+      <>
     <NewNav />
     <div className="max-w-6xl mx-auto p-6 mt-20">
       <h1 className="text-3xl font-bold text-indigo-600 mb-8">Admin Dashboard</h1>
@@ -163,6 +168,11 @@ export default function AdminDashboard() {
         </div>
       </section>
     </div>
+    </>
+
+) : (
+  <p>you not an admin lil bro what you doing here</p>
+) }
 
     </>
   );
