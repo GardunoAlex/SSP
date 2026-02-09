@@ -31,33 +31,43 @@ export default function OrgNav() {
       }
     }, [user]);
   
-    const fetchOrgData = async () => {
-      setError(null);
-      try {
-        const supaUser = await getSupabaseUser(getAccessTokenSilently);
-        const userId = supaUser?.id;
-        if (!userId) throw new Error('Could not resolve user id');
+  const fetchOrgData = async () => {
+    setError(null);
+    try {
+      // Token only — no IDs
+      const token = await getAccessTokenSilently();
   
-        // Fetch organization profile from Supabase
-        const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
-        
-        if (!orgRes.ok) {
-          throw new Error(`Failed to fetch organization: ${orgRes.status}`);
+      const orgRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/organizations/private`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-        
-        const orgData = await orgRes.json();
-        
-        if (orgData) {
-          setOrganization(orgData);
-        } else {
-          throw new Error("No organization data returned");
-        }
+      );
   
-      } catch (error) {
-        console.error("Error fetching org data:", error);
-        setError(error.message);
+      if (orgRes.status === 403) {
+        throw new Error("You do not have organization access");
       }
+  
+      if (!orgRes.ok) {
+        throw new Error(`Failed to fetch organization: ${orgRes.status}`);
+      }
+  
+      const orgData = await orgRes.json();
+  
+      if (!orgData) {
+        throw new Error("No organization data returned");
+      }
+  
+      setOrganization(orgData);
+  
+    } catch (error) {
+      console.error("Error fetching org data:", error);
+      setError(error.message);
+    }
     };
+    
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
