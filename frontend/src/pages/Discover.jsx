@@ -803,12 +803,6 @@ const Discover = () => {
                     : `Showing ${Math.min((currentPage - 1) * CARDS_PER_PAGE + 1, opportunities.length)}–${Math.min(currentPage * CARDS_PER_PAGE, opportunities.length)} of ${opportunities.length} results`}
                 </p>
               </div>
-              <select className="px-4 py-2 border border-slate-300 rounded-full text-sm font-medium focus:outline-none focus:border-purple-primary">
-                <option>Most Relevant</option>
-                <option>Deadline Soon</option>
-                <option>Recently Added</option>
-                <option>Highest Paid</option>
-              </select>
             </div>
 
             {/* Results Grid */}

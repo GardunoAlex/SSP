@@ -241,18 +241,6 @@ export default function OpportunityDetails() {
                 {opportunity.description}
               </p>
             </div>
-            
-            <button
-              onClick={handleToggleSave}
-              disabled={isSaving}
-              className={`px-6 py-3 rounded-full font-semibold transition-colors whitespace-nowrap ${
-                isSaved
-                  ? "bg-gold text-white hover:bg-gold/80"
-                  : "bg-purple-primary text-white hover:bg-gold"
-              } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              {isSaving ? "Saving..." : isSaved ? "Saved ✓" : "Save"}
-            </button>
           </div>
 
           <div className="space-y-3 text-sm text-slate-600 mb-6">
@@ -262,6 +250,21 @@ export default function OpportunityDetails() {
               </span>{" "}
               {opportunity.gpa_requirement || "N/A"}
             </p>
+            {opportunity.compensation ? (
+              <p>
+                <span className="font-semibold text-purple-dark">
+                  Compensation:
+                </span>{" "}
+                {opportunity.compensation}
+              </p>
+            ) : (
+              <p>
+                <span className="font-semibold text-purple-dark">
+                  Compensation:
+                </span>{" "}
+                N/A
+              </p>
+            )}
             {opportunity.majors?.length > 0 && (
               <p>
                 <span className="font-semibold text-purple-dark">
