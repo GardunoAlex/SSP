@@ -835,7 +835,6 @@ const Discover = () => {
                     : `Showing ${Math.min((currentPage - 1) * CARDS_PER_PAGE + 1, opportunities.length)}–${Math.min(currentPage * CARDS_PER_PAGE, opportunities.length)} of ${opportunities.length} results`}
                 </p>
               </div>
-              
             </div>
 
             {/* Results Grid */}

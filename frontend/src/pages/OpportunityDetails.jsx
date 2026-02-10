@@ -315,6 +315,7 @@ export default function OpportunityDetails() {
               </p>
             </div>
 
+
             {/* Hide Save button for org users */}
             {!isOrgRole && (
               <button
@@ -329,6 +330,7 @@ export default function OpportunityDetails() {
                 {isSaving ? "Saving..." : isSaved ? "Saved ✓" : "Save"}
               </button>
             )}
+
           </div>
 
           <div className="space-y-3 text-sm text-slate-600 mb-6">
@@ -338,6 +340,21 @@ export default function OpportunityDetails() {
               </span>{" "}
               {opportunity.gpa_requirement || "N/A"}
             </p>
+            {opportunity.compensation ? (
+              <p>
+                <span className="font-semibold text-purple-dark">
+                  Compensation:
+                </span>{" "}
+                {opportunity.compensation}
+              </p>
+            ) : (
+              <p>
+                <span className="font-semibold text-purple-dark">
+                  Compensation:
+                </span>{" "}
+                N/A
+              </p>
+            )}
             {opportunity.majors?.length > 0 && (
               <p>
                 <span className="font-semibold text-purple-dark">

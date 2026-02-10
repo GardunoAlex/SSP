@@ -48,25 +48,41 @@ const EditOpportunity = () => {
 
   const fetchData = async () => {
     try {
-      // Always fetch fresh to avoid stale cache from a different account/role
+      // Optional: keep this if you still rely on cached Supabase user
       const supaUser = await getSupabaseUser(getAccessTokenSilently);
       if (supaUser?.id) setCachedSupaUser(supaUser);
-      const userId = supaUser?.id;
-      if (!userId) throw new Error("Could not resolve user id");
-
-      // Fetch organization
-      const orgRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
-      if (!orgRes.ok) throw new Error(`Failed to fetch organization: ${orgRes.status}`);
+  
+      // 🔐 Fetch org via PRIVATE endpoint
+      const token = await getAccessTokenSilently();
+  
+      const orgRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/organizations/private`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      if (!orgRes.ok) {
+        throw new Error(`Failed to fetch organization: ${orgRes.status}`);
+      }
+  
       const orgData = await orgRes.json();
-
       if (orgData) {
         setOrganization(orgData);
       }
-
-      // Fetch opportunity
-      const oppRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/${id}`);
+  
+      // 📄 Fetch opportunity (content, not identity — OK to stay public)
+      const oppRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/opportunities/${id}`
+      );
+      if (!oppRes.ok) {
+        throw new Error(`Failed to fetch opportunity: ${oppRes.status}`);
+      }
+  
       const oppData = await oppRes.json();
-      
+  
       setFormData({
         title: oppData.title || "",
         description: oppData.description || "",
@@ -74,17 +90,18 @@ const EditOpportunity = () => {
         majors: oppData.majors || [],
         location: oppData.location || "",
         apply_link: oppData.apply_link || "",
-        deadline: oppData.deadline ? oppData.deadline.split('T')[0] : "",
+        deadline: oppData.deadline ? oppData.deadline.split("T")[0] : "",
         compensation: oppData.compensation || "",
         banner_url: oppData.banner_url || "",
       });
-
+  
       setLoading(false);
     } catch (error) {
       console.error("Error fetching data:", error);
       setLoading(false);
     }
   };
+  
 
   const handleAddMajor = () => {
     const value = majorInput === "Other" ? customMajor.trim() : majorInput.trim();
