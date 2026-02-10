@@ -31,7 +31,7 @@ const Footer = () => {
             </a>
             {/* TODO: Add feedback form link here */}
             <a
-              href=""
+              href="https://docs.google.com/forms/d/e/1FAIpQLSf-25DHXxMMjylOQYnj6F85e_J1YbToy6LNRvJoS8sagc0WQw/viewform"
               className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2"
             >
               <MessageCircle className="w-4 h-4" />
