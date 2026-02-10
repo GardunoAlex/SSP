@@ -1,14 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useState, useEffect } from "react";
 import useLocalStorage from "../hooks/useLocalStorage";
-import { clearCached, fetchWithCache } from "../lib/apiCache";
-import { getSupabaseUser } from "../lib/apiHelpers";
 import { OrgModalSkeleton } from "./Skeletons";
 import defaultBanner from "../assets/PurpleSSP_WP.png";
+import { Star } from "lucide-react";
 
-// TODO: Banner image dimensions are fixed (h-64). Still need to adjust for
-// dynamic image dimensions instead of a hardcoded size.
-// Pattern wallpapers get contain+repeat so logos stay clear; uploaded photos use cover
 const getBannerStyle = (url) => ({
   backgroundImage: `url(${url})`,
   backgroundSize: url.includes("Wallpaper") ? "contain" : "cover",
@@ -25,7 +20,34 @@ const OrganizationModal = ({
   isSaved,
   isSaving,
 }) => {
+  const [cachedSupaUser] = useLocalStorage("supaUser", null);
+  const [orgReviews, setOrgReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  const validSupaUser = cachedSupaUser && typeof cachedSupaUser === "object" && cachedSupaUser.id
+    ? cachedSupaUser : null;
+  const isOrgRole = validSupaUser?.role === "org";
+
+  // Verified check: works with both boolean (pre-migration) and string (post-migration)
+  const isVerified = selectedOrg?.verified === true || selectedOrg?.verified === "verified";
+
+  // Fetch org reviews when modal opens
+  useEffect(() => {
+    if (!selectedOrg?.id) return;
+    setLoadingReviews(true);
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reviews/org/${selectedOrg.id}`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setOrgReviews(Array.isArray(data) ? data : []))
+      .catch(() => setOrgReviews([]))
+      .finally(() => setLoadingReviews(false));
+  }, [selectedOrg?.id]);
+
   if (!selectedOrg) return null;
+
+  // Average rating with divide-by-zero guard
+  const avgRating = orgReviews.length > 0
+    ? (orgReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / orgReviews.length).toFixed(1)
+    : null;
 
   return (
     <div
@@ -42,7 +64,7 @@ const OrganizationModal = ({
           style={getBannerStyle(selectedOrg.banner_url || defaultBanner)}
         >
           <div className="absolute inset-0 bg-black/30" />
-          
+
           <button
             onClick={() => setSelectedOrg(null)}
             className="absolute top-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/30 transition-colors z-10"
@@ -66,24 +88,27 @@ const OrganizationModal = ({
                   {selectedOrg.name}
                 </h2>
 
-                {selectedOrg.verified && (
+                {isVerified && (
                   <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
                     ✓ Verified Organization
                   </span>
                 )}
               </div>
 
-              <button
-                onClick={() => onToggleSave && onToggleSave(selectedOrg)}
-                disabled={isSaving}
-                className={`px-6 py-3 rounded-full font-semibold transition-colors ${
-                  isSaved
-                    ? "bg-gold text-white hover:bg-gold/80"
-                    : "bg-purple-primary text-white hover:bg-gold"
-                } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                {isSaving ? "Saving..." : isSaved ? "Saved ✓" : "Save Organization"}
-              </button>
+              {/* Hide Save button for org users */}
+              {!isOrgRole && (
+                <button
+                  onClick={() => onToggleSave && onToggleSave(selectedOrg)}
+                  disabled={isSaving}
+                  className={`px-6 py-3 rounded-full font-semibold transition-colors ${
+                    isSaved
+                      ? "bg-gold text-white hover:bg-gold/80"
+                      : "bg-purple-primary text-white hover:bg-gold"
+                  } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {isSaving ? "Saving..." : isSaved ? "Saved ✓" : "Save Organization"}
+                </button>
+              )}
             </div>
 
             {/* Tags */}
@@ -198,6 +223,55 @@ const OrganizationModal = ({
                       >
                         Apply Now
                       </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Reviews Section */}
+          <div className="border-t border-slate-200 pt-8 mt-8">
+            <div className="flex items-center gap-3 mb-6">
+              <h3 className="text-2xl font-bold text-purple-dark">Reviews</h3>
+              {avgRating && (
+                <div className="flex items-center gap-1 px-3 py-1 bg-amber-50 rounded-full">
+                  <Star size={18} className="text-amber-400" fill="currentColor" />
+                  <span className="font-semibold text-amber-700">{avgRating}</span>
+                  <span className="text-sm text-slate-500">({orgReviews.length})</span>
+                </div>
+              )}
+            </div>
+
+            {loadingReviews ? (
+              <OrgModalSkeleton />
+            ) : orgReviews.length === 0 ? (
+              <div className="text-center py-12 bg-slate-50 rounded-2xl">
+                <p className="text-slate-600">No reviews for this organization yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {orgReviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="bg-gradient-to-br from-purple-50 to-white p-4 rounded-xl border border-purple-100"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold text-purple-dark text-sm">{review.title}</span>
+                      <div className="flex items-center gap-1">
+                        <Star size={14} className="text-amber-400" fill="currentColor" />
+                        <span className="text-sm font-medium">{review.rating}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-600 line-clamp-3">{review.review}</p>
+                    {review.opportunities?.title && (
+                      <p className="text-xs text-slate-400 mt-2">on: {review.opportunities.title}</p>
+                    )}
+                    {review.org_reply && (
+                      <div className="mt-2 pt-2 border-t border-purple-100">
+                        <p className="text-xs font-semibold text-purple-primary mb-1">Organization Response</p>
+                        <p className="text-xs text-slate-600">{review.org_reply}</p>
+                      </div>
                     )}
                   </div>
                 ))}

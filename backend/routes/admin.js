@@ -36,19 +36,24 @@ router.get("/opportunities", async (req, res) => {
 router.patch("/verify/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { status } = req.body;
 
-    // Update the user's verified status
+    const allowed = ["not_verified", "in_progress", "verified"];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${allowed.join(", ")}` });
+    }
+
     const { data, error } = await supabase
       .from("users")
-      .update({ verified: true })
+      .update({ verified: status })
       .eq("id", id)
       .select();
 
     if (error) throw error;
-    res.json({ message: "User verified successfully", data });
+    res.json({ message: "Verification status updated", data });
   } catch (err) {
-    console.error("Error verifying user:", err);
-    res.status(500).json({ error: "Failed to verify user" });
+    console.error("Error updating verification status:", err);
+    res.status(500).json({ error: "Failed to update verification status" });
   }
 });
 

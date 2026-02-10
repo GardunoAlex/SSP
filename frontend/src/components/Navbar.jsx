@@ -39,7 +39,7 @@ export default function NewNav() {
         setRole(roleFromAuth0 || roleFromSupabase);
 
         // ✅ Track verification status from Supabase
-        setIsVerified(supaUser?.verified === true);
+        setIsVerified(supaUser?.verified === true || supaUser?.verified === "verified");
       } catch (err) {
         console.error("Error fetching user verification:", err);
       }

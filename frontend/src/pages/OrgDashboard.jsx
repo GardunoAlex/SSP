@@ -464,11 +464,13 @@ const OrgDashboard = () => {
                 <div>
                   <h3 className="text-sm font-semibold text-slate-500 mb-1">Status</h3>
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                    organization.verified 
-                      ? "bg-green-100 text-green-700" 
-                      : "bg-yellow-100 text-yellow-700"
+                    (organization.verified === true || organization.verified === "verified")
+                      ? "bg-green-100 text-green-700"
+                      : organization.verified === "in_progress"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-yellow-100 text-yellow-700"
                   }`}>
-                    {organization.verified ? "✓ Verified" : "Pending Verification"}
+                    {(organization.verified === true || organization.verified === "verified") ? "✓ Verified" : organization.verified === "in_progress" ? "In Review" : "Pending Verification"}
                   </span>
                 </div>
               </div>

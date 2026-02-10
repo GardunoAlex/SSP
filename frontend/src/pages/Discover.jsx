@@ -875,7 +875,7 @@ const Discover = () => {
 
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-slate-500">
-                              {org.verified ? "✓ Verified" : "Pending"}
+                              {(org.verified === true || org.verified === "verified") ? "✓ Verified" : org.verified === "in_progress" ? "In Review" : "Pending"}
                             </span>
 
                             <div className="flex items-center gap-2">
