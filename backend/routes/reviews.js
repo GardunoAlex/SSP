@@ -31,6 +31,36 @@ router.get("/org/:orgId", async (req, res) => {
   }
 });
 
+// Get all reviews written by the authenticated student (derived from JWT)
+// Must be defined before /:id to avoid "mine" being matched as an id
+router.get("/mine", jwtCheck, async (req, res) => {
+  try {
+    const auth0Sub = req.auth.payload.sub;
+
+    const { data: caller, error: callerErr } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_id", auth0Sub)
+      .single();
+
+    if (callerErr || !caller) {
+      return res.status(400).json({ error: "User not found in database" });
+    }
+
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("*, opportunities!inner(title, org_id, org:users!org_id(name, banner_url))")
+      .eq("student_id", caller.id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching student reviews:", err);
+    res.status(500).json({ error: "Failed to fetch student reviews" });
+  }
+});
+
 // get the opportunity reviews
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
@@ -142,6 +172,112 @@ router.patch("/:reviewId/reply", jwtCheck, async (req, res) => {
   } catch (err) {
     console.error("Error saving reply:", err);
     res.status(500).json({ error: "Failed to save reply" });
+  }
+});
+
+// Student edits their own review
+router.patch("/:reviewId", jwtCheck, async (req, res) => {
+  const { reviewId } = req.params;
+  const { title, review, rating } = req.body;
+
+  try {
+    const auth0Sub = req.auth.payload.sub;
+
+    const { data: caller, error: callerErr } = await supabase
+      .from("users")
+      .select("id, role")
+      .eq("auth_id", auth0Sub)
+      .single();
+
+    if (callerErr || !caller) {
+      return res.status(400).json({ error: "User not found in database" });
+    }
+
+    if (caller.role === "org") {
+      return res.status(403).json({ error: "Organizations cannot edit reviews" });
+    }
+
+    const { data: existingReview, error: fetchErr } = await supabase
+      .from("reviews")
+      .select("id, student_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (fetchErr || !existingReview) {
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    if (existingReview.student_id !== caller.id) {
+      return res.status(403).json({ error: "You can only edit your own reviews" });
+    }
+
+    const updates = {};
+    if (title !== undefined) updates.title = title;
+    if (review !== undefined) updates.review = review;
+    if (rating !== undefined) updates.rating = rating;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    const { data, error } = await supabase
+      .from("reviews")
+      .update(updates)
+      .eq("id", reviewId)
+      .select();
+
+    if (error) throw error;
+    res.json({ message: "Review updated", data });
+  } catch (err) {
+    console.error("Error updating review:", err);
+    res.status(500).json({ error: "Failed to update review" });
+  }
+});
+
+// Student deletes their own review
+router.delete("/:reviewId", jwtCheck, async (req, res) => {
+  const { reviewId } = req.params;
+  try {
+    const auth0Sub = req.auth.payload.sub;
+
+    const { data: caller, error: callerErr } = await supabase
+      .from("users")
+      .select("id, role")
+      .eq("auth_id", auth0Sub)
+      .single();
+
+    if (callerErr || !caller) {
+      return res.status(400).json({ error: "User not found in database" });
+    }
+
+    if (caller.role === "org") {
+      return res.status(403).json({ error: "Organizations cannot delete reviews" });
+    }
+
+    const { data: existingReview, error: fetchErr } = await supabase
+      .from("reviews")
+      .select("id, student_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (fetchErr || !existingReview) {
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    if (existingReview.student_id !== caller.id) {
+      return res.status(403).json({ error: "You can only delete your own reviews" });
+    }
+
+    const { error } = await supabase
+      .from("reviews")
+      .delete()
+      .eq("id", reviewId);
+
+    if (error) throw error;
+    res.json({ message: "Review deleted" });
+  } catch (err) {
+    console.error("Error deleting review:", err);
+    res.status(500).json({ error: "Failed to delete review" });
   }
 });
 

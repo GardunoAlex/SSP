@@ -8,6 +8,14 @@ import NewNav from "../components/newNav.jsx";
 import Footer from "../components/Footer";
 import ImageUpload from "../components/ImageUpload.jsx";
 
+const MAJORS = [
+  "Technology",
+  "Engineering",
+  "Business",
+  "Healthcare",
+  "Marketing",
+];
+
 const EditOpportunity = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -30,6 +38,7 @@ const EditOpportunity = () => {
   });
 
   const [majorInput, setMajorInput] = useState("");
+  const [customMajor, setCustomMajor] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -78,9 +87,11 @@ const EditOpportunity = () => {
   };
 
   const handleAddMajor = () => {
-    if (majorInput.trim() && !formData.majors.includes(majorInput.trim())) {
-      setFormData({ ...formData, majors: [...formData.majors, majorInput.trim()] });
+    const value = majorInput === "Other" ? customMajor.trim() : majorInput.trim();
+    if (value && !formData.majors.includes(value)) {
+      setFormData({ ...formData, majors: [...formData.majors, value] });
       setMajorInput("");
+      setCustomMajor("");
     }
   };
 
@@ -98,9 +109,13 @@ const EditOpportunity = () => {
         gpa_requirement: formData.gpa_requirement || null,
       };
 
+      const token = await getAccessTokenSilently();
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/opportunities/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -202,27 +217,45 @@ const EditOpportunity = () => {
                 <label className="block text-sm font-semibold text-purple-dark mb-2">
                   Location
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                />
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-purple-primary"
+                >
+                  <option value="">Select Location</option>
+                  {["Remote", "On-Site", "Hybrid"].map((location) => (
+                    <option key={location} value={location}>{location}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-purple-dark mb-2">
-                Relevant Majors
+                Industry Tags
               </label>
               <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
+                <select
                   value={majorInput}
                   onChange={(e) => setMajorInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMajor())}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-                />
+                  className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-purple-primary"
+                >
+                  <option value="">Select Industry</option>
+                  {MAJORS.map((major) => (
+                    <option key={major} value={major}>{major}</option>
+                  ))}
+                  <option value="Other">Other</option>
+                </select>
+                {majorInput === "Other" && (
+                  <input
+                    type="text"
+                    value={customMajor}
+                    onChange={(e) => setCustomMajor(e.target.value)}
+                    placeholder="Type custom tag..."
+                    className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-purple-primary"
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMajor())}
+                  />
+                )}
                 <button
                   type="button"
                   onClick={handleAddMajor}
@@ -281,12 +314,16 @@ const EditOpportunity = () => {
               <label className="block text-sm font-semibold text-purple-dark mb-2">
                 Compensation
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.compensation}
                 onChange={(e) => setFormData({ ...formData, compensation: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-primary"
-              />
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-purple-primary"
+              >
+                <option value="">Select compensation</option>
+                {["Paid", "Unpaid", "Stipend"].map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex gap-4 pt-4">

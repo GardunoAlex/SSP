@@ -1,6 +1,6 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GraduationCap, Telescope, User, CirclePlus, LogOut} from "lucide-react";
 import { getSupabaseUser } from "../lib/apiHelpers";
 
@@ -9,6 +9,7 @@ export default function OrgNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [error, setError] = useState(null);
   const [organization, setOrganization] = useState(null);
@@ -19,6 +20,17 @@ export default function OrgNav() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.profile-dropdown') && !e.target.closest('.profile-button')) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   const handleLogout = () => {
@@ -111,21 +123,26 @@ export default function OrgNav() {
               </button>
 
               {showProfileMenu && (
-                <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50">
+                <div className="profile-dropdown absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50">
                   <div className="px-4 py-3 border-b border-slate-200">
                     <p className="font-bold text-purple-dark text-base break-words whitespace-normal">{organization?.name || error}</p>
                     <p className="text-purple-dark text-base break-words whitespace-normal">{organization?.email}</p>
                   </div>
 
-                  <Link
-                    to="/org/dashboard"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 transition-colors"
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      if (location.pathname !== "/org/dashboard") {
+                        navigate("/org/dashboard");
+                      }
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 transition-colors w-full text-left"
                   >
                     <User className="w-5 h-5 text-purple-primary" />
                     <span className="text-sm font-medium text-purple-dark">
                       Dashboard
                     </span>
-                  </Link>
+                  </button>
 
                   <Link
                     to="/org/create-opportunity"

@@ -19,6 +19,7 @@ import { DiscoverSkeleton } from "../components/Skeletons";
 import { useNavigate } from "react-router-dom";
 import defaultBanner from "../assets/SSP Wallpaper.png";
 import defaultOrgBanner from "../assets/PurpleSSP_WP.png";
+import { getVerificationDisplay } from "../lib/verificationUtils";
 
 const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
@@ -62,8 +63,8 @@ const Discover = () => {
     inclusionFocus: [],
     majors: [],
     opportunityType: [],
-    location: "all",
     compensation: "",
+    location: "all",
   });
 
   const MAJORS = [
@@ -156,6 +157,20 @@ const Discover = () => {
     window.addEventListener("savedOrgChanged", listener);
     return () => window.removeEventListener("savedOrgChanged", listener);
   }, [user]);
+
+  // Scroll restoration: restore position when returning via Back button
+  useEffect(() => {
+    if (!loading) {
+      const savedPos = sessionStorage.getItem("discover_scroll_pos");
+      if (savedPos) {
+        window.scrollTo(0, parseInt(savedPos));
+        sessionStorage.removeItem("discover_scroll_pos");
+      }
+    }
+    return () => {
+      sessionStorage.setItem("discover_scroll_pos", window.scrollY.toString());
+    };
+  }, [loading]);
 
   const fetchOpportunities = async () => {
     setLoading(true);
@@ -382,8 +397,8 @@ const Discover = () => {
       inclusionFocus: [],
       majors: [],
       opportunityType: [],
-      location: "all",
       compensation: "",
+      location: "all",
     });
   };
 
@@ -442,12 +457,12 @@ const Discover = () => {
       )
         return false;
 
-      // 🌍 Location
-      if (filters.location !== "all" && item.location !== filters.location)
-        return false;
-
       // 💵 Compensation
       if (filters.compensation && item.compensation !== filters.compensation)
+        return false;
+
+      // 📍 Location
+      if (filters.location && filters.location !== "all" && item.location !== filters.location)
         return false;
 
       return true;
@@ -548,6 +563,9 @@ const Discover = () => {
         ></div>
 
         <div className="max-w-5xl mx-auto text-center relative z-10 pt-12">
+          <div className="mb-6 bg-gradient-to-r from-purple-primary to-purple-dark text-white text-center text-sm py-2 px-4 rounded-full font-medium max-w-2xl mx-auto">
+            You're using the Beta version of StudentStarter+ — your feedback helps us improve!
+          </div>
           <h1 className="text-5xl font-bold text-purple-primary mb-4">
             Discover
           </h1>
@@ -817,12 +835,7 @@ const Discover = () => {
                     : `Showing ${Math.min((currentPage - 1) * CARDS_PER_PAGE + 1, opportunities.length)}–${Math.min(currentPage * CARDS_PER_PAGE, opportunities.length)} of ${opportunities.length} results`}
                 </p>
               </div>
-              <select className="px-4 py-2 border border-slate-300 rounded-full text-sm font-medium focus:outline-none focus:border-purple-primary">
-                <option>Most Relevant</option>
-                <option>Deadline Soon</option>
-                <option>Recently Added</option>
-                <option>Highest Paid</option>
-              </select>
+              
             </div>
 
             {/* Results Grid */}
@@ -836,7 +849,7 @@ const Discover = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className={`grid grid-cols-1 gap-6 ${activeTab === "organizations" ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
                 {activeTab === "organizations"
                   ? // Organization Cards
                     currentCards.map((org) => (
@@ -875,7 +888,7 @@ const Discover = () => {
 
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-slate-500">
-                              {(org.verified === true || org.verified === "verified") ? "✓ Verified" : org.verified === "in_progress" ? "In Review" : "Pending"}
+                              {(() => { const vd = getVerificationDisplay(org.verified); return vd.text === "Verified" ? "✓ Verified" : vd.text; })()}
                             </span>
 
                             <div className="flex items-center gap-2">
@@ -910,7 +923,7 @@ const Discover = () => {
                                 </span>
                               )}
 
-                              {validSupaUser?.role === "student" && (
+                              {validSupaUser?.role && validSupaUser.role !== "org" && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1120,6 +1133,7 @@ const Discover = () => {
           isSaving={
             selectedOrg ? savingOrgIds.includes(String(selectedOrg.id)) : false
           }
+          getAccessTokenSilently={getAccessTokenSilently}
         />
       </main>
 

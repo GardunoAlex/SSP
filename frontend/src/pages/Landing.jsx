@@ -19,14 +19,13 @@ const Landing = () => {
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       const role = user["https://studentstarter.com/role"];
-      
+
       if (role === "org") {
         navigate("/org/dashboard");
-      } else if (role === "student") {
-        navigate("/discover");
       } else if (role === "admin") {
         navigate("/admin/dashboard");
       }
+      // Students stay on the landing page (Home)
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -37,6 +36,11 @@ const Landing = () => {
   return (
     <div className="bg-cream min-h-screen">
       <NewNav />
+      <div className="px-6 pt-24 pb-4">
+        <div className="bg-gradient-to-r from-purple-primary to-purple-dark text-white text-center text-sm py-2 px-4 rounded-full font-medium max-w-2xl mx-auto">
+          Welcome to the Beta version of StudentStarter+ — your feedback helps us improve!
+        </div>
+      </div>
       <Hero />
       <Features />
       <WhatWeDo />

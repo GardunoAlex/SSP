@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, MessageSquarePlus, Reply } from "lucide-react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Star, MessageSquarePlus, Reply, Pencil } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { clearCached } from "../lib/apiCache";
@@ -13,6 +13,7 @@ import { OpportunityDetailsSkeleton } from "../components/Skeletons";
 export default function OpportunityDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0();
 
   const [opportunity, setOpportunity] = useState(null);
@@ -27,6 +28,9 @@ export default function OpportunityDetails() {
   const [reviews, setReviews] = useState([]);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: "", review: "", rating: 0 });
+  const [editHover, setEditHover] = useState(0);
   const [form, setForm] = useState({
     title: "",
     review: "",
@@ -170,6 +174,15 @@ export default function OpportunityDetails() {
     fetchReviews();
   }, [id]);
 
+  // Scroll to reviews section when navigated from MyReviews
+  useEffect(() => {
+    if (location.state?.scrollToReviews && !loading) {
+      setTimeout(() => {
+        document.getElementById("reviews-section")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [loading, location.state]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.rating === 0) {
@@ -220,6 +233,42 @@ export default function OpportunityDetails() {
       fetchReviews();
     } catch (err) {
       console.error("Error replying:", err);
+    }
+  };
+
+  const startEditReview = (review) => {
+    setEditingReviewId(review.id);
+    setEditForm({ title: review.title, review: review.review, rating: review.rating });
+  };
+
+  const cancelEditReview = () => {
+    setEditingReviewId(null);
+    setEditForm({ title: "", review: "", rating: 0 });
+    setEditHover(0);
+  };
+
+  const handleEditReview = async (reviewId) => {
+    if (editForm.rating === 0) return;
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reviews/${reviewId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: editForm.title,
+          review: editForm.review,
+          rating: editForm.rating,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update review");
+      setEditingReviewId(null);
+      setEditForm({ title: "", review: "", rating: 0 });
+      fetchReviews();
+    } catch (err) {
+      console.error("Error editing review:", err);
     }
   };
 
@@ -327,7 +376,7 @@ export default function OpportunityDetails() {
         </div>
 
         {/* Review Section */}
-        <div>
+        <div id="reviews-section">
           {/* Org owner: show message or reply controls */}
           {isOrgOwner ? (
             reviews.length === 0 ? (
@@ -345,7 +394,7 @@ export default function OpportunityDetails() {
               <div className="mb-5">
                 <form onSubmit={handleSubmit} className="space-y-6 mt-6 bg-white p-6 rounded-xl shadow-md border border-purple-100">
                   <div className="flex flex-col">
-                    <label className="text-sm font-semibold text-purple-dark mb-1">Title</label>
+                    <label className="text-sm font-semibold text-purple-dark mb-1">Name</label>
                     <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="px-4 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-gold focus:outline-none text-slate-700" required/>
                   </div>
 
@@ -411,63 +460,135 @@ export default function OpportunityDetails() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {reviews.map((review) => (
                 <div key={review.id} className="group relative bg-gradient-to-br from-purple-50 to-white p-5 rounded-xl border-2 border-purple-100 hover:border-gold hover:shadow-xl transition-all duration-300">
-
-                  <div className="flex justify-between items-center">
-                    <div className="font-bold text-purple-dark mb-1 group-hover:text-gold transition-colors">{review.title}</div>
-                    <div className="flex gap-1">
-                      <Star size={22} className="text-amber-400"/>
-                      <div>{review.rating}</div>
+                  {editingReviewId === review.id ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-semibold text-purple-dark mb-1 block">Name</label>
+                        <input
+                          value={editForm.title}
+                          onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-gold focus:outline-none text-sm text-slate-700"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-purple-dark mb-1 block">Review</label>
+                        <textarea
+                          value={editForm.review}
+                          onChange={(e) => setEditForm({ ...editForm, review: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-gold focus:outline-none text-sm text-slate-700 h-20 resize-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-purple-dark mb-1 block">Rating</label>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            const isFilled = star <= (editHover || editForm.rating);
+                            return (
+                              <button
+                                type="button"
+                                key={star}
+                                onClick={() => setEditForm({ ...editForm, rating: star })}
+                                onMouseEnter={() => setEditHover(star)}
+                                onMouseLeave={() => setEditHover(0)}
+                              >
+                                <Star
+                                  size={18}
+                                  className={`transition-colors ${isFilled ? "text-yellow-400" : "text-gray-300"}`}
+                                  fill={isFilled ? "currentColor" : "none"}
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditReview(review.id)}
+                          className="flex-1 px-3 py-1.5 text-sm bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEditReview}
+                          className="flex-1 px-3 py-1.5 text-sm bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors font-semibold"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="pt-2 text-slate-700">
-                    {review.review?.length > 200 ? `${review.review.slice(0, 200)}...` : review.review}
-                  </div>
-
-                  {/* Org reply display */}
-                  {review.org_reply && (
-                    <div className="mt-3 pt-3 border-t border-purple-100">
-                      <p className="text-sm font-semibold text-purple-primary mb-1">Organization Response</p>
-                      <p className="text-sm text-slate-600">{review.org_reply}</p>
-                    </div>
-                  )}
-
-                  {/* Org owner reply button */}
-                  {isOrgOwner && !review.org_reply && (
-                    <div className="mt-3">
-                      {replyingTo === review.id ? (
-                        <div className="space-y-2">
-                          <textarea
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder="Write your response..."
-                            className="w-full px-3 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-gold focus:outline-none text-sm text-slate-700 h-20 resize-none"
-                          />
-                          <div className="flex gap-2">
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <div className="font-bold text-purple-dark mb-1 group-hover:text-gold transition-colors">{review.title}</div>
+                        <div className="flex items-center gap-2">
+                          {review.student_id === userId && !isOrgRole && (
                             <button
-                              onClick={() => handleReply(review.id)}
-                              className="px-3 py-1 text-sm bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+                              onClick={() => startEditReview(review)}
+                              className="text-purple-primary hover:text-gold transition-colors"
+                              title="Edit your review"
                             >
-                              Submit Reply
+                              <Pencil size={14} />
                             </button>
-                            <button
-                              onClick={() => { setReplyingTo(null); setReplyText(""); }}
-                              className="px-3 py-1 text-sm bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors font-semibold"
-                            >
-                              Cancel
-                            </button>
+                          )}
+                          <div className="flex gap-1">
+                            <Star size={22} className="text-amber-400"/>
+                            <div>{review.rating}</div>
                           </div>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => { setReplyingTo(review.id); setReplyText(""); }}
-                          className="flex items-center gap-1 text-sm text-purple-primary hover:text-gold transition-colors font-medium"
-                        >
-                          <Reply size={14} />
-                          Respond to Review
-                        </button>
+                      </div>
+
+                      <div className="pt-2 text-slate-700">
+                        {review.review?.length > 200 ? `${review.review.slice(0, 200)}...` : review.review}
+                      </div>
+
+                      {/* Org reply display */}
+                      {review.org_reply && (
+                        <div className="mt-3 pt-3 border-t border-purple-100">
+                          <p className="text-sm font-semibold text-purple-primary mb-1">Organization Response</p>
+                          <p className="text-sm text-slate-600">{review.org_reply}</p>
+                        </div>
                       )}
-                    </div>
+
+                      {/* Org owner reply button */}
+                      {isOrgOwner && !review.org_reply && (
+                        <div className="mt-3">
+                          {replyingTo === review.id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                placeholder="Write your response..."
+                                className="w-full px-3 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-gold focus:outline-none text-sm text-slate-700 h-20 resize-none"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleReply(review.id)}
+                                  className="px-3 py-1 text-sm bg-purple-primary text-white rounded-lg hover:bg-gold transition-colors font-semibold"
+                                >
+                                  Submit Reply
+                                </button>
+                                <button
+                                  onClick={() => { setReplyingTo(null); setReplyText(""); }}
+                                  className="px-3 py-1 text-sm bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors font-semibold"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setReplyingTo(review.id); setReplyText(""); }}
+                              className="flex items-center gap-1 text-sm text-purple-primary hover:text-gold transition-colors font-medium"
+                            >
+                              <Reply size={14} />
+                              Respond to Review
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
