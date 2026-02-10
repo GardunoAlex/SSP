@@ -10,6 +10,7 @@ import OrgDashboard from "./pages/OrgDashboard.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import Signup from "./pages/SignUp.jsx";
 import Auth from "./pages/Auth.jsx";
+import MyReviews from "./pages/MyReviews.jsx";
 import "./index.css";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
@@ -37,6 +38,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
+          {/* removed /about — landing page serves as home */}
           <Route path="/discover" element={<Discover />} />
           <Route path="/opportunity/:id" element={<OpportunityDetails />} />
           <Route path="/signup" element={<Signup />} />
@@ -44,6 +46,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
           {/* Student Routes */}
           <Route path="/saved" element={<Saved />} />
+          <Route path="/my-reviews" element={<MyReviews />} />
           <Route path="/organizations" element={<div>Organizations Page - Coming Soon</div>} />
           <Route path="/profile" element={<div>Profile Page - Coming Soon</div>} />
           <Route path="/settings" element={<div>Settings Page - Coming Soon</div>} />
