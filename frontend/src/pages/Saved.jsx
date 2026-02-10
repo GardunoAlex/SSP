@@ -8,6 +8,7 @@ import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
 import { Bookmark } from "lucide-react";
 import { SavedSkeleton } from "../components/Skeletons";
+import defaultOrgBanner from "../assets/PurpleSSP_WP.png";
 
 const MIN_LOAD_MS = 300;
 
@@ -363,10 +364,17 @@ const Saved = () => {
                     onClick={() => handleOrgClick(org)}
                     className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border-2 border-transparent hover:border-purple-primary cursor-pointer"
                   >
-                    <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
-                      <span className="text-6xl font-bold text-white">
-                        {org.name?.charAt(0) || "?"}
-                      </span>
+                    <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 overflow-hidden relative">
+                      <img
+                        src={org.banner_url || defaultOrgBanner}
+                        alt={org.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {!org.banner_url && (
+                        <span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-white/90">
+                          {org.name?.charAt(0) || "?"}
+                        </span>
+                      )}
                     </div>
 
                     <div className="p-6">

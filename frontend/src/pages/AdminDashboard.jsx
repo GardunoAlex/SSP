@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { AdminDashboardSkeleton } from "../components/Skeletons";
 import NewNav from "../components/newNav.jsx";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const MIN_LOAD_MS = 300;
 
@@ -10,6 +11,10 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openSections, setOpenSections] = useState({ users: true, orgs: true, opps: true });
+
+  const toggleSection = (key) =>
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const isAdmin = user?.["https://studentstarter.com/role"] === "admin";
 
