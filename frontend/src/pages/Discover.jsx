@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ArrowLeft,
   ArrowRight,
-  Check,
   ExternalLink,
 } from "lucide-react";
 import NewNav from "../components/newNav";
@@ -21,7 +20,7 @@ import { DiscoverSkeleton } from "../components/Skeletons";
 import { useNavigate } from "react-router-dom";
 import defaultBanner from "../assets/SSP Wallpaper.png";
 import defaultOrgBanner from "../assets/PurpleSSP_WP.png";
-import { getVerificationDisplay, isOrgVerified } from "../lib/verificationUtils";
+import { getVerificationDisplay } from "../lib/verificationUtils";
 
 const CARDS_PER_PAGE = 12;
 const MAX_VISIBLE_PAGES = 5;
@@ -67,7 +66,6 @@ const Discover = () => {
     opportunityType: [],
     compensation: "",
     location: "all",
-    verifiedOnly: false,
   });
 
   const MAJORS = [
@@ -402,7 +400,6 @@ const Discover = () => {
       opportunityType: [],
       compensation: "",
       location: "all",
-      verifiedOnly: false,
     });
   };
 
@@ -467,10 +464,6 @@ const Discover = () => {
 
       // 📍 Location
       if (filters.location && filters.location !== "all" && item.location !== filters.location)
-        return false;
-
-      // ✓ Verified Only
-      if (filters.verifiedOnly && !isOrgVerified(item.users?.verified))
         return false;
 
       return true;
@@ -817,28 +810,6 @@ const Discover = () => {
                   </div>
                 </details>
 
-                {/* Filter: Verified Only */}
-                <div className="pt-4">
-                  <label className="flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={filters.verifiedOnly}
-                      onChange={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          verifiedOnly: !prev.verifiedOnly,
-                        }))
-                      }
-                      className="w-4 h-4 text-green-600 border-slate-300 rounded focus:ring-green-500"
-                    />
-                    <span className="ml-3 text-sm font-semibold text-purple-dark group-hover:text-purple-primary flex items-center gap-1.5">
-                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-green-500 text-green-500">
-                        <Check size={10} />
-                      </span>
-                      Verified Only
-                    </span>
-                  </label>
-                </div>
               </div>
             </div>
           </aside>
@@ -1008,13 +979,8 @@ const Discover = () => {
                         <div className="p-6 flex flex-col flex-1">
                           {/* Content */}
                           <div className="flex-1">
-                            <h3 className="text-xl font-bold text-purple-dark mb-2 flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-purple-dark mb-2">
                               {opp.title}
-                              {isOrgVerified(opp.users?.verified) && (
-                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border-2 border-green-500 text-green-500 flex-shrink-0" title="Verified Organization">
-                                  <Check className="w-3 h-3" />
-                                </span>
-                              )}
                             </h3>
                             <p className="text-slate-600 text-sm mb-4 line-clamp-3">
                               {opp.description}
