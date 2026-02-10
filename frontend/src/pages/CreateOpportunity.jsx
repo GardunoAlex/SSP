@@ -46,25 +46,38 @@ const CreateOpportunity = () => {
 
   const fetchOrgData = async () => {
     try {
-      // Always fetch fresh to avoid stale cache from a different account/role
+      // Optional: keep this if you still want cached Supabase user
       const supaUser = await getSupabaseUser(getAccessTokenSilently);
       if (supaUser?.id) setCachedSupaUser(supaUser);
-      const userId = supaUser?.id;
-      if (!userId) throw new Error("Could not resolve user id");
-
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizations/${userId}`);
-      if (!res.ok) throw new Error(`Failed to fetch organization: ${res.status}`);
+  
+      const token = await getAccessTokenSilently();
+  
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/organizations/private`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      if (!res.ok) {
+        throw new Error(`Failed to fetch organization: ${res.status}`);
+      }
+  
       const data = await res.json();
-
+  
       if (data) {
         setOrganization(data);
       }
+  
       setLoading(false);
     } catch (error) {
       console.error("Error fetching org data:", error);
       setLoading(false);
     }
   };
+  
 
   const handleAddMajor = () => {
     if (majorInput.trim() && !formData.majors.includes(majorInput.trim())) {
