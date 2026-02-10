@@ -1,17 +1,55 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { AdminDashboardSkeleton } from "../components/Skeletons";
 import NewNav from "../components/newNav.jsx";
+import ConfirmModal from "../components/ConfirmModal";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const MIN_LOAD_MS = 300;
+
+const STATUS_LABELS = {
+  not_verified: { text: "Not Verified", color: "text-red-500" },
+  in_progress: { text: "In Progress", color: "text-yellow-600" },
+  verified: { text: "Verified", color: "text-green-600" },
+};
 
 export default function AdminDashboard() {
   const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently, user } = useAuth0();
   const [users, setUsers] = useState([]);
+  const [students, setStudents] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openSections, setOpenSections] = useState({ users: true, orgs: true, opps: true, students: true });
+  const [orgVerifyFilter, setOrgVerifyFilter] = useState("all");
+  const [oppVerifyFilter, setOppVerifyFilter] = useState("all");
+
+  // ConfirmModal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    confirmColor: "red",
+    action: null,
+  });
+
+  const toggleSection = (key) =>
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const isAdmin = user?.["https://studentstarter.com/role"] === "admin";
+
+  const openConfirm = useCallback(({ title, message, confirmText, confirmColor, action }) => {
+    setConfirmModal({ isOpen: true, title, message, confirmText: confirmText || "Confirm", confirmColor: confirmColor || "red", action });
+  }, []);
+
+  const handleConfirm = useCallback(async () => {
+    if (confirmModal.action) await confirmModal.action();
+    setConfirmModal((prev) => ({ ...prev, isOpen: false, action: null }));
+  }, [confirmModal.action]);
+
+  const handleCancelConfirm = useCallback(() => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false, action: null }));
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -24,11 +62,14 @@ export default function AdminDashboard() {
       const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
       const token = await getAccessTokenSilently();
 
-      const [usersRes, oppsRes] = await Promise.all([
+      const [usersRes, oppsRes, studentsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/opportunities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/students`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         minDelay
@@ -36,11 +77,96 @@ export default function AdminDashboard() {
 
       setUsers(await usersRes.json());
       setOpportunities(await oppsRes.json());
+      setStudents(await studentsRes.json());
       setLoading(false);
     };
 
     fetchData();
   }, [isAuthenticated, authLoading, isAdmin, getAccessTokenSilently]);
+
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/admin/verify/${userId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to update status");
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, verified: newStatus } : u))
+      );
+    } catch (err) {
+      console.error("Error updating verification status:", err);
+    }
+  };
+
+  const handleRemoveOrg = async (orgId) => {
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/admin/organization/${orgId}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Failed to remove organization");
+      setUsers((prev) => prev.filter((u) => u.id !== orgId));
+      setOpportunities((prev) => prev.filter((opp) => opp.org_id !== orgId));
+    } catch (err) {
+      console.error("Error removing organization:", err);
+    }
+  };
+
+  const handleCloseOpp = async (oppId) => {
+    try {
+      const token = await getAccessTokenSilently();
+      await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/admin/opportunity/${oppId}/close`,
+        { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }
+      );
+      setOpportunities((prev) =>
+        prev.map((o) => (o.id === oppId ? { ...o, status: "closed" } : o))
+      );
+    } catch (err) {
+      console.error("Error closing opportunity:", err);
+    }
+  };
+
+  const filteredUsers = orgVerifyFilter === "all"
+    ? users
+    : users.filter((u) => (u.verified || "not_verified") === orgVerifyFilter);
+
+  const filteredOpportunities = oppVerifyFilter === "all"
+    ? opportunities
+    : opportunities.filter((opp) => (opp.users?.verified || "not_verified") === oppVerifyFilter);
+
+  const VerifyFilterPills = ({ value, onChange }) => (
+    <div className="flex gap-2 mb-3 flex-wrap">
+      {[
+        { key: "all", label: "All" },
+        { key: "verified", label: "Verified" },
+        { key: "in_progress", label: "In Progress" },
+        { key: "not_verified", label: "Not Verified" },
+      ].map((opt) => (
+        <button
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
+          className={`px-3 py-1 text-sm rounded-full font-medium transition-colors ${
+            value === opt.key
+              ? "bg-indigo-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
 
   if (authLoading || loading) {
     return (
@@ -50,187 +176,274 @@ export default function AdminDashboard() {
     );
   }
 
-  return (
-    <>
-
-
-
-    {isAdmin ? (
+  if (!isAdmin) {
+    return (
       <>
+        <NewNav />
+        <div className="max-w-6xl mx-auto p-6 mt-20">
+          <p className="text-center text-slate-600">
+            You don’t have access to this page.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  return (
+  <>
     <NewNav />
+
     <div className="max-w-6xl mx-auto p-6 mt-20">
-      <h1 className="text-3xl font-bold text-indigo-600 mb-8">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold text-indigo-600 mb-8">
+        Admin Dashboard
+      </h1>
 
-      {/* Users Table */}
+      {/* USERS */}
       <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">All Users</h2>
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="min-w-full bg-white">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 text-left">Name</th>
-                <th className="p-3 text-left">Email</th>
-                <th className="p-3 text-left">Role</th>
-                <th className="p-3 text-left">Verified</th>
-              </tr>
-            </thead>
-            <tbody>
-            {/** if the user isn't verify, display in the  */ }
-              {users.filter((u) => !u.verified).map((u) => (
-                <tr key={u.id} className="border-t">
-                    <td className="p-3">{u.name}</td>
-                    <td className="p-3">{u.email}</td>
-                    <td className="p-3">{u.role}</td>
-                    <td className="p-3">
-                      <button
-                        onClick={async () => {
+        <button
+          onClick={() => toggleSection("users")}
+          className="flex items-center gap-2 text-xl font-semibold mb-4 hover:text-indigo-600 transition-colors"
+        >
+          {openSections.users ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+          All Users ({users.length})
+        </button>
 
-                            try {
-                            const token = await getAccessTokenSilently();
-                            const res = await fetch(
-                                `${import.meta.env.VITE_API_BASE_URL}/api/admin/verify/${u.id}`,
-                                {
-                                method: "PATCH",
-                                headers: { Authorization: `Bearer ${token}` },
-                                }
-                            );
+        {openSections.users && (
+          <>
+          <VerifyFilterPills value={orgVerifyFilter} onChange={setOrgVerifyFilter} />
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full bg-white table-fixed">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left w-[25%]">Name</th>
+                  <th className="p-3 text-left w-[30%]">Email</th>
+                  <th className="p-3 text-left w-[10%]">Role</th>
+                  <th className="p-3 text-left w-[20%]">Verification</th>
+                  <th className="p-3 text-left w-[15%]">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u) => {
+                  const status =
+                    STATUS_LABELS[u.verified] || STATUS_LABELS.not_verified;
 
-                            if (!res.ok) throw new Error("Failed to verify user");
-                            setUsers((prev) =>
-                                prev.map((user) =>
-                                user.id === u.id ? { ...user, verified: true } : user
-                                )
-                            );
-                            } catch (err) {
-                            console.error("Error verifying user:", err);
-                            }
-                        }}
-                        className="text-indigo-600 hover:underline font-medium"
+                  return (
+                    <tr key={u.id} className="border-t">
+                      <td className="p-3 truncate">{u.name}</td>
+                      <td className="p-3 truncate">{u.email}</td>
+                      <td className="p-3">{u.role}</td>
+                      <td className="p-3">
+                        <select
+                          value={u.verified || "not_verified"}
+                          onChange={(e) => {
+                            const newStatus = e.target.value;
+                            openConfirm({
+                              title: "Change Verification Status",
+                              message: `Set "${u.name}" to "${STATUS_LABELS[newStatus].text}"?`,
+                              confirmText: "Update",
+                              confirmColor: "purple",
+                              action: () =>
+                                handleStatusChange(u.id, newStatus),
+                            });
+                          }}
+                          className={`text-sm font-medium rounded-lg px-2 py-1 border ${status.color}`}
                         >
-                        Not verified
+                          <option value="not_verified">Not Verified</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="verified">Verified</option>
+                        </select>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          className="text-red-500 hover:underline font-medium"
+                          onClick={() =>
+                            openConfirm({
+                              title: "Remove Organization",
+                              message: `Remove "${u.name}"? This will delete the organization and all its opportunities.`,
+                              confirmText: "Remove",
+                              action: () => handleRemoveOrg(u.id),
+                            })
+                          }
+                        >
+                          Remove
                         </button>
-                        </td>
-               
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          </>
+        )}
       </section>
 
-      {/* Organizations Table */}
+      {/* ORGS */}
       <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">All Organizations</h2>
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full bg-white table-fixed">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 text-left w-[25%]">Name</th>
-                <th className="p-3 text-left w-[35%]">Email</th>
-                <th className="p-3 text-left w-[15%]">Verified</th>
-                <th className="p-3 text-left w-[25%]">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-t">
-                  <td className="p-3 truncate">{u.name}</td>
-                  <td className="p-3 truncate">{u.email}</td>
-                  <td className="p-3">
-                    {u.verified ? (
-                      <span className="text-green-600 font-medium">Yes</span>
-                    ) : (
-                      <span className="text-yellow-600 font-medium">No</span>
-                    )}
-                  </td>
-                  <td className="p-3">
-                    <button
-                      className="text-red-500 hover:underline font-medium"
-                      onClick={async () => {
-                        if (!window.confirm(`Remove "${u.name}"? This will delete the organization and all its opportunities.`)) return;
-                        try {
-                          const token = await getAccessTokenSilently();
-                          const res = await fetch(
-                            `${import.meta.env.VITE_API_BASE_URL}/api/admin/organization/${u.id}`,
-                            {
-                              method: "DELETE",
-                              headers: { Authorization: `Bearer ${token}` },
-                            }
-                          );
-                          if (!res.ok) throw new Error("Failed to remove organization");
-                          setUsers((prev) => prev.filter((user) => user.id !== u.id));
-                          setOpportunities((prev) => prev.filter((opp) => opp.org_id !== u.id));
-                        } catch (err) {
-                          console.error("Error removing organization:", err);
-                        }
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </td>
+        <button
+          onClick={() => toggleSection("orgs")}
+          className="flex items-center gap-2 text-xl font-semibold mb-4 hover:text-indigo-600 transition-colors"
+        >
+          {openSections.orgs ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+          All Organizations ({users.length})
+        </button>
+
+        {openSections.orgs && (
+          <>
+          <VerifyFilterPills value={orgVerifyFilter} onChange={setOrgVerifyFilter} />
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full bg-white table-fixed">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left w-[25%]">Name</th>
+                  <th className="p-3 text-left w-[35%]">Email</th>
+                  <th className="p-3 text-left w-[15%]">Verified</th>
+                  <th className="p-3 text-left w-[25%]">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u) => {
+                  const status =
+                    STATUS_LABELS[u.verified] || STATUS_LABELS.not_verified;
+
+                  return (
+                    <tr key={u.id} className="border-t">
+                      <td className="p-3 truncate">{u.name}</td>
+                      <td className="p-3 truncate">{u.email}</td>
+                      <td className="p-3 font-medium">
+                        <span className={status.color}>{status.text}</span>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          className="text-red-500 hover:underline font-medium"
+                          onClick={() =>
+                            openConfirm({
+                              title: "Remove Organization",
+                              message: `Remove "${u.name}"? This will delete the organization and all its opportunities.`,
+                              confirmText: "Remove",
+                              action: () => handleRemoveOrg(u.id),
+                            })
+                          }
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          </>
+        )}
       </section>
 
-      {/* Opportunities Table */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4">All Opportunities</h2>
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="min-w-full bg-white">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 text-left">Title</th>
-                <th className="p-3 text-left">Org</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {opportunities.map((opp) => (
-                <tr key={opp.id} className="border-t">
-                  <td className="p-3">{opp.title}</td>
-                  <td className="p-3">{opp.users?.name || "Unknown"}</td>
-                  <td className="p-3">{opp.status}</td>
-                  <td className="p-3">
-                    {opp.status === "active" && (
-                      <button
-                        className="text-red-500 hover:underline"
-                        onClick={async () => {
-                          const token = await getAccessTokenSilently();
-                          await fetch(
-                            `${import.meta.env.VITE_API_BASE_URL}/api/admin/opportunity/${opp.id}/close`,
-                            {
-                              method: "PATCH",
-                              headers: { Authorization: `Bearer ${token}` },
-                            }
-                          );
-                          setOpportunities((prev) =>
-                            prev.map((o) =>
-                              o.id === opp.id ? { ...o, status: "closed" } : o
-                            )
-                          );
-                        }}
-                      >
-                        Close
-                      </button>
-                    )}
-                  </td>
+      {/* STUDENTS */}
+      <section className="mb-10">
+        <button
+          onClick={() => toggleSection("students")}
+          className="flex items-center gap-2 text-xl font-semibold mb-4 hover:text-indigo-600 transition-colors"
+        >
+          {openSections.students ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+          All Students ({students.length})
+        </button>
+
+        {openSections.students && (
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full bg-white table-fixed">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left w-[30%]">Name</th>
+                  <th className="p-3 text-left w-[40%]">Email</th>
+                  <th className="p-3 text-left w-[30%]">Joined</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {students.map((s) => (
+                  <tr key={s.id} className="border-t">
+                    <td className="p-3 truncate">{s.name}</td>
+                    <td className="p-3 truncate">{s.email}</td>
+                    <td className="p-3">{new Date(s.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* OPPORTUNITIES */}
+      <section>
+        <button
+          onClick={() => toggleSection("opps")}
+          className="flex items-center gap-2 text-xl font-semibold mb-4 hover:text-indigo-600 transition-colors"
+        >
+          {openSections.opps ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+          All Opportunities ({opportunities.length})
+        </button>
+
+        {openSections.opps && (
+          <>
+          <VerifyFilterPills value={oppVerifyFilter} onChange={setOppVerifyFilter} />
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="min-w-full bg-white">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Title</th>
+                  <th className="p-3 text-left">Org</th>
+                  <th className="p-3 text-left">Verified</th>
+                  <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOpportunities.map((opp) => {
+                  const orgStatus = STATUS_LABELS[opp.users?.verified] || STATUS_LABELS.not_verified;
+                  return (
+                  <tr key={opp.id} className="border-t">
+                    <td className="p-3">{opp.title}</td>
+                    <td className="p-3">{opp.users?.name || "Unknown"}</td>
+                    <td className="p-3 font-medium">
+                      <span className={orgStatus.color}>{orgStatus.text}</span>
+                    </td>
+                    <td className="p-3">{opp.status}</td>
+                    <td className="p-3">
+                      {opp.status === "active" && (
+                        <button
+                          className="text-red-500 hover:underline"
+                          onClick={() =>
+                            openConfirm({
+                              title: "Close Opportunity",
+                              message: `Close "${opp.title}"?`,
+                              confirmText: "Close",
+                              action: () => handleCloseOpp(opp.id),
+                            })
+                          }
+                        >
+                          Close
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          </>
+        )}
       </section>
     </div>
-    </>
 
-) : (
-  <p>you not an admin lil bro what you doing here</p>
-) }
-
-    </>
-  );
+    <ConfirmModal
+      isOpen={confirmModal.isOpen}
+      onConfirm={handleConfirm}
+      onCancel={handleCancelConfirm}
+      title={confirmModal.title}
+      message={confirmModal.message}
+      confirmText={confirmModal.confirmText}
+      confirmColor={confirmModal.confirmColor}
+    />
+  </>
+);
 }

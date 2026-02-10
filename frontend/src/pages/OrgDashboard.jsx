@@ -6,6 +6,7 @@ import { getSupabaseUser } from "../lib/apiHelpers";
 import Footer from "../components/Footer";
 import { OrgDashboardSkeleton } from "../components/Skeletons";
 import ImageUpload from "../components/ImageUpload";
+import { isOrgVerified, getVerificationDisplay } from "../lib/verificationUtils";
 
 const MIN_LOAD_MS = 300;
 import NewNav from "../components/newNav.jsx";
@@ -304,6 +305,10 @@ const OrgDashboard = () => {
     <div className="min-h-screen bg-cream">
       <NewNav />
       <main className="max-w-7xl mx-auto px-6 py-12 pt-28 min-h-[75vh]">
+        {/* Beta Banner */}
+        <div className="mb-6 bg-gradient-to-r from-purple-primary to-purple-dark text-white text-center text-sm py-2 px-4 rounded-full font-medium max-w-2xl mx-auto">
+          You're using the Beta version of StudentStarter+ — your feedback helps us improve!
+        </div>
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b border-slate-200">
           <button
@@ -442,6 +447,11 @@ const OrgDashboard = () => {
                 )}
 
                 <div>
+                  <h3 className="text-sm font-semibold text-slate-500 mb-1">Organization Name</h3>
+                  <p className="text-slate-700 text-lg font-semibold">{organization.name || "No name set"}</p>
+                </div>
+
+                <div>
                   <h3 className="text-sm font-semibold text-slate-500 mb-1">Description</h3>
                   <p className="text-slate-700">{organization.org_description || "No description"}</p>
                 </div>
@@ -469,13 +479,14 @@ const OrgDashboard = () => {
 
                 <div>
                   <h3 className="text-sm font-semibold text-slate-500 mb-1">Status</h3>
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                    organization.verified 
-                      ? "bg-green-100 text-green-700" 
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}>
-                    {organization.verified ? "✓ Verified" : "Pending Verification"}
-                  </span>
+                  {(() => {
+                    const vd = getVerificationDisplay(organization.verified);
+                    return (
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${vd.colorClass}`}>
+                        {isOrgVerified(organization.verified) ? "✓ " : ""}{vd.text}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             )}

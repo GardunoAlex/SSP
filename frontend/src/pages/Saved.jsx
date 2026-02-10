@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { fetchWithCache, clearCached } from "../lib/apiCache";
 import useLocalStorage from "../hooks/useLocalStorage";
@@ -8,10 +9,12 @@ import Footer from "../components/Footer";
 import OrganizationModal from "../components/OrganizationModal";
 import { Bookmark } from "lucide-react";
 import { SavedSkeleton } from "../components/Skeletons";
+import defaultOrgBanner from "../assets/PurpleSSP_WP.png";
 
 const MIN_LOAD_MS = 300;
 
 const Saved = () => {
+  const navigate = useNavigate();
   const { user, isLoading: authLoading, getAccessTokenSilently } = useAuth0();
   const [cachedSupaUser, setCachedSupaUser] = useLocalStorage("supaUser", null);
   const [activeTab, setActiveTab] = useState("opportunities");
@@ -237,6 +240,11 @@ const Saved = () => {
       <StudentNav />
 
       <main className="max-w-7xl mx-auto px-6 py-12 pt-28">
+        {/* Beta Banner */}
+        <div className="mb-6 bg-gradient-to-r from-purple-primary to-purple-dark text-white text-center text-sm py-2 px-4 rounded-full font-medium max-w-2xl mx-auto">
+          You're using the Beta version of StudentStarter+ — your feedback helps us improve!
+        </div>
+
         {/* Header */}
         <div className="mb-12 text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -295,7 +303,8 @@ const Saved = () => {
                   {savedOpportunities.map((opp) => (
                     <div
                       key={opp.id}
-                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all p-6 border-2 border-transparent hover:border-purple-primary"
+                      onClick={() => navigate(`/opportunity/${opp.id}`)}
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all p-6 border-2 border-transparent hover:border-purple-primary cursor-pointer"
                     >
                       <h3 className="text-xl font-bold text-purple-dark mb-2">
                         {opp.title}
@@ -363,10 +372,17 @@ const Saved = () => {
                     onClick={() => handleOrgClick(org)}
                     className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border-2 border-transparent hover:border-purple-primary cursor-pointer"
                   >
-                    <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 flex items-center justify-center">
-                      <span className="text-6xl font-bold text-white">
-                        {org.name?.charAt(0) || "?"}
-                      </span>
+                    <div className="h-48 bg-gradient-to-br from-purple-200 to-gold/30 overflow-hidden relative">
+                      <img
+                        src={org.banner_url || defaultOrgBanner}
+                        alt={org.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {!org.banner_url && (
+                        <span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-white/90">
+                          {org.name?.charAt(0) || "?"}
+                        </span>
+                      )}
                     </div>
 
                     <div className="p-6">
@@ -414,6 +430,7 @@ const Saved = () => {
         onToggleSave={handleToggleSaveOrg}
         isSaved={selectedOrg ? savedOrgIds.includes(String(selectedOrg.id)) : false}
         isSaving={selectedOrg ? savingOrgIds.includes(String(selectedOrg.id)) : false}
+        getAccessTokenSilently={getAccessTokenSilently}
       />
 
 

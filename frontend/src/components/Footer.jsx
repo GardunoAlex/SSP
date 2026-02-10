@@ -1,4 +1,4 @@
-import { GraduationCap, Mail } from "lucide-react";
+import { GraduationCap, Mail, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -23,11 +23,19 @@ const Footer = () => {
           </div>
 
           <div className="flex items-center gap-8 text-sm">
-            <a 
+            <a
               href="https://mail.google.com/mail/?view=cm&fs=1&to=studentstarterplus@gmail.com&su=Student%20Starter%20Plus%20Contact&body=Hi%20Team%20at%20Student%20Starter%20Plus,"
               className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Contact
+            </a>
+            {/* TODO: Add feedback form link here */}
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSf-25DHXxMMjylOQYnj6F85e_J1YbToy6LNRvJoS8sagc0WQw/viewform"
+              className="text-slate-300 hover:text-gold transition-colors flex items-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Give Us Feedback
             </a>
           </div>
         </div>

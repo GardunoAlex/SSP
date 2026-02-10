@@ -184,7 +184,7 @@ const ImageUpload = forwardRef(({ currentUrl, onUpload, entityType, entityId, ge
             Preview: How your banner will appear
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Card Preview */}
             <div>
               <p className="text-xs text-slate-500 mb-1 font-medium">Discover Card</p>
@@ -211,6 +211,24 @@ const ImageUpload = forwardRef(({ currentUrl, onUpload, entityType, entityId, ge
                   <div className="h-4 w-1/2 bg-slate-200 rounded mb-2" />
                   <div className="h-2 w-full bg-slate-100 rounded mb-1" />
                   <div className="h-2 w-5/6 bg-slate-100 rounded" />
+                </div>
+              </div>
+            </div>
+
+            {/* Instagram Post Preview */}
+            <div>
+              <p className="text-xs text-slate-500 mb-1 font-medium">Instagram Post</p>
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                <div className="aspect-square overflow-hidden">
+                  <img src={preview} alt="Instagram preview" className="w-full h-full object-cover" />
+                </div>
+                <div className="p-3 bg-white">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-5 w-5 bg-slate-200 rounded-full" />
+                    <div className="h-2 w-16 bg-slate-200 rounded" />
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded mb-1" />
+                  <div className="h-2 w-1/2 bg-slate-100 rounded" />
                 </div>
               </div>
             </div>

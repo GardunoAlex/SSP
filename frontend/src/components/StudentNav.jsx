@@ -99,22 +99,44 @@ const StudentNav = () => {
                   }`}></span>
                 </Link>
 
+                {/* My Reviews Link */}
+                <Link
+                  to="/my-reviews"
+                  className={`hidden md:block font-semibold text-lg transition-colors duration-300 relative group ${
+                    isActive("/my-reviews")
+                      ? "text-purple-primary"
+                      : "text-purple-dark hover:text-yellow-500"
+                  }`}
+                >
+                  My Reviews
+                  <span className={`absolute -bottom-1 left-0 h-0.5 bg-yellow-500 transition-all duration-300 ${
+                    isActive("/my-reviews") ? "w-full" : "w-0 group-hover:w-full"
+                  }`}></span>
+                </Link>
+
+                {/* Home Link */}
+                <Link
+                  to="/"
+                  className={`hidden md:block font-semibold text-lg transition-colors duration-300 relative group ${
+                    isActive("/")
+                      ? "text-purple-primary"
+                      : "text-purple-dark hover:text-yellow-500"
+                  }`}
+                >
+                  Home
+                  <span className={`absolute -bottom-1 left-0 h-0.5 bg-yellow-500 transition-all duration-300 ${
+                    isActive("/") ? "w-full" : "w-0 group-hover:w-full"
+                  }`}></span>
+                </Link>
+
                 <div className="relative"> 
                     <button
                       onClick={() => setShowProfileMenu(!showProfileMenu)}
                       className="profile-button flex items-center space-x-3 hover:opacity-80 transition-opacity"
                     >
-                      {user?.picture ? (
-                        <img
-                          src={user.picture}
-                          alt="Profile"
-                          className="w-10 h-10 rounded-full border-2 border-purple-primary"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-primary to-gold flex items-center justify-center text-white font-bold text-lg">
-                          {user?.name?.charAt(0) || "U"}
-                        </div>
-                      )}
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-primary to-gold flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
                       <span className="hidden lg:block text-purple-dark font-semibold">
                         {user?.name?.split(' ')[0] || 'Student'}
                       </span>
@@ -127,25 +149,50 @@ const StudentNav = () => {
                           <p className="font-bold text-purple-dark text-base">{user?.name}</p>
                           <p className="text-sm text-slate-500 truncate">{user?.email}</p>
                         </div>
-                        {/** 
-                        <Link
-                          to="/profile"
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 transition-colors"
-                        >
-                          <User className="w-5 h-5 text-purple-primary" />
-                          <span className="text-sm font-medium text-purple-dark">Edit Profile</span>
-                        </Link>
 
-                        <Link
+                        {/* Mobile-only navigation */}
+                        <div className="md:hidden">
+                        <Link
+                            to="/discover"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            Discover
+                        </Link>
+
+                        <Link
+                            to="/saved"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            Saved
+                        </Link>
+
+                        <Link
+                            to="/my-reviews"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            My Reviews
+                        </Link>
+
+                        <Link
+                            to="/"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            Home
+                        </Link>
+
+                        </div>
+{/*                         <Link
                           to="/settings"
                           className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 transition-colors"
                         >
                           <Settings className="w-5 h-5 text-purple-primary" />
                           <span className="text-sm font-medium text-purple-dark">Settings</span>
-                        </Link>
+                        </Link> */}
 
-                        <div className="border-t border-slate-200 my-2"></div>
-                        */}
                         <button
                           onClick={handleLogout}
                           className="flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors w-full text-left"

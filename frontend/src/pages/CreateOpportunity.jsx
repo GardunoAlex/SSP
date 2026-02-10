@@ -29,6 +29,7 @@ const CreateOpportunity = () => {
   });
 
   const [majorInput, setMajorInput] = useState("");
+  const [customMajor, setCustomMajor] = useState("");
 
   const MAJORS = [
     "Technology",
@@ -80,9 +81,11 @@ const CreateOpportunity = () => {
   
 
   const handleAddMajor = () => {
-    if (majorInput.trim() && !formData.majors.includes(majorInput.trim())) {
-      setFormData({ ...formData, majors: [...formData.majors, majorInput.trim()] });
+    const value = majorInput === "Other" ? customMajor.trim() : majorInput.trim();
+    if (value && !formData.majors.includes(value)) {
+      setFormData({ ...formData, majors: [...formData.majors, value] });
       setMajorInput("");
+      setCustomMajor("");
     }
   };
 
@@ -271,7 +274,7 @@ const CreateOpportunity = () => {
             {/* Majors */}
             <div>
               <label className="block text-sm font-semibold text-purple-dark mb-2">
-                Relevant Majors
+                Industry Tags
               </label>
               <div className="flex gap-2 mb-2">
                 <select
@@ -289,8 +292,18 @@ const CreateOpportunity = () => {
                   {MAJORS.map((major) => (
                       <option key={major} value={major}>{major}</option>
                   ))}
-                  
+                  <option value="Other">Other</option>
                 </select>
+                {majorInput === "Other" && (
+                  <input
+                    type="text"
+                    value={customMajor}
+                    onChange={(e) => setCustomMajor(e.target.value)}
+                    placeholder="Type custom tag..."
+                    className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-purple-primary"
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMajor())}
+                  />
+                )}
                 <button
                   type="button"
                   onClick={handleAddMajor}

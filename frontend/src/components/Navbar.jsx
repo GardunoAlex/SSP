@@ -3,6 +3,7 @@ import { useState, useEffect} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import Modal from "./Modal";
+import { isOrgVerified } from "../lib/verificationUtils";
 
 export default function NewNav() {
   const { isAuthenticated, loginWithRedirect, logout, user, getAccessTokenSilently } = useAuth0();
@@ -39,7 +40,7 @@ export default function NewNav() {
         setRole(roleFromAuth0 || roleFromSupabase);
 
         // ✅ Track verification status from Supabase
-        setIsVerified(supaUser?.verified === true);
+        setIsVerified(isOrgVerified(supaUser?.verified));
       } catch (err) {
         console.error("Error fetching user verification:", err);
       }
