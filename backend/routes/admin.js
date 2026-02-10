@@ -3,13 +3,13 @@ import supabase from "../supabaseClient.js";
 
 const router = express.Router();
 
-// ✅ Get all users
+// ✅ Get all org users
 router.get("/users", async (req, res) => {
   try {
     const { data, error } = await supabase
     .from("users")
     .select("*")
-    .eq("role", "org");;
+    .eq("role", "org");
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -18,12 +18,27 @@ router.get("/users", async (req, res) => {
   }
 });
 
+// ✅ Get all students
+router.get("/students", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, name, email, role, created_at")
+      .eq("role", "student");
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching students:", err);
+    res.status(500).json({ error: "Failed to fetch students" });
+  }
+});
+
 // ✅ Get all opportunities
 router.get("/opportunities", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("opportunities")
-      .select("*, users(name, email, role)")
+      .select("*, users(name, email, role, verified)")
       .order("created_at", { ascending: false });
     if (error) throw error;
     res.json(data);

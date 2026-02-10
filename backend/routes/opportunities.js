@@ -27,7 +27,7 @@ router.get("/", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("opportunities")
-      .select("*")
+      .select("*, users(name, verified)")
       .eq("status", "active");
 
     if (error) throw error;
@@ -44,7 +44,7 @@ router.get("/org/:org_id", async (req, res) => {
     const { org_id } = req.params;
     const { data, error } = await supabase
       .from("opportunities")
-      .select("*")
+      .select("*, users(name, verified)")
       .eq("org_id", org_id)
       .eq("status", "active");
 
@@ -62,7 +62,7 @@ router.get("/:id", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("opportunities")
-      .select("*")
+      .select("*, users(name, verified)")
       .eq("id", id)
       .single();
 

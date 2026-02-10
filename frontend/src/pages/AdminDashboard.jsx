@@ -16,9 +16,12 @@ const STATUS_LABELS = {
 export default function AdminDashboard() {
   const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently, user } = useAuth0();
   const [users, setUsers] = useState([]);
+  const [students, setStudents] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [openSections, setOpenSections] = useState({ users: true, orgs: true, opps: true });
+  const [openSections, setOpenSections] = useState({ users: true, orgs: true, opps: true, students: true });
+  const [orgVerifyFilter, setOrgVerifyFilter] = useState("all");
+  const [oppVerifyFilter, setOppVerifyFilter] = useState("all");
 
   // ConfirmModal state
   const [confirmModal, setConfirmModal] = useState({
@@ -59,11 +62,14 @@ export default function AdminDashboard() {
       const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
       const token = await getAccessTokenSilently();
 
-      const [usersRes, oppsRes] = await Promise.all([
+      const [usersRes, oppsRes, studentsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/opportunities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/students`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         minDelay
@@ -71,6 +77,7 @@ export default function AdminDashboard() {
 
       setUsers(await usersRes.json());
       setOpportunities(await oppsRes.json());
+      setStudents(await studentsRes.json());
       setLoading(false);
     };
 
@@ -130,6 +137,37 @@ export default function AdminDashboard() {
     }
   };
 
+  const filteredUsers = orgVerifyFilter === "all"
+    ? users
+    : users.filter((u) => (u.verified || "not_verified") === orgVerifyFilter);
+
+  const filteredOpportunities = oppVerifyFilter === "all"
+    ? opportunities
+    : opportunities.filter((opp) => (opp.users?.verified || "not_verified") === oppVerifyFilter);
+
+  const VerifyFilterPills = ({ value, onChange }) => (
+    <div className="flex gap-2 mb-3 flex-wrap">
+      {[
+        { key: "all", label: "All" },
+        { key: "verified", label: "Verified" },
+        { key: "in_progress", label: "In Progress" },
+        { key: "not_verified", label: "Not Verified" },
+      ].map((opt) => (
+        <button
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
+          className={`px-3 py-1 text-sm rounded-full font-medium transition-colors ${
+            value === opt.key
+              ? "bg-indigo-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+
   if (authLoading || loading) {
     return (
       <div className="max-w-6xl mx-auto p-6 mt-20">
@@ -171,6 +209,8 @@ export default function AdminDashboard() {
         </button>
 
         {openSections.users && (
+          <>
+          <VerifyFilterPills value={orgVerifyFilter} onChange={setOrgVerifyFilter} />
           <div className="overflow-x-auto border rounded-lg">
             <table className="w-full bg-white table-fixed">
               <thead className="bg-gray-100">
@@ -183,7 +223,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => {
+                {filteredUsers.map((u) => {
                   const status =
                     STATUS_LABELS[u.verified] || STATUS_LABELS.not_verified;
 
@@ -234,6 +274,7 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 
@@ -248,6 +289,8 @@ export default function AdminDashboard() {
         </button>
 
         {openSections.orgs && (
+          <>
+          <VerifyFilterPills value={orgVerifyFilter} onChange={setOrgVerifyFilter} />
           <div className="overflow-x-auto border rounded-lg">
             <table className="w-full bg-white table-fixed">
               <thead className="bg-gray-100">
@@ -259,7 +302,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => {
+                {filteredUsers.map((u) => {
                   const status =
                     STATUS_LABELS[u.verified] || STATUS_LABELS.not_verified;
 
@@ -291,6 +334,41 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+          </>
+        )}
+      </section>
+
+      {/* STUDENTS */}
+      <section className="mb-10">
+        <button
+          onClick={() => toggleSection("students")}
+          className="flex items-center gap-2 text-xl font-semibold mb-4 hover:text-indigo-600 transition-colors"
+        >
+          {openSections.students ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+          All Students ({students.length})
+        </button>
+
+        {openSections.students && (
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full bg-white table-fixed">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left w-[30%]">Name</th>
+                  <th className="p-3 text-left w-[40%]">Email</th>
+                  <th className="p-3 text-left w-[30%]">Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((s) => (
+                  <tr key={s.id} className="border-t">
+                    <td className="p-3 truncate">{s.name}</td>
+                    <td className="p-3 truncate">{s.email}</td>
+                    <td className="p-3">{new Date(s.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
@@ -305,21 +383,29 @@ export default function AdminDashboard() {
         </button>
 
         {openSections.opps && (
+          <>
+          <VerifyFilterPills value={oppVerifyFilter} onChange={setOppVerifyFilter} />
           <div className="overflow-x-auto border rounded-lg">
             <table className="min-w-full bg-white">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="p-3 text-left">Title</th>
                   <th className="p-3 text-left">Org</th>
+                  <th className="p-3 text-left">Verified</th>
                   <th className="p-3 text-left">Status</th>
                   <th className="p-3 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {opportunities.map((opp) => (
+                {filteredOpportunities.map((opp) => {
+                  const orgStatus = STATUS_LABELS[opp.users?.verified] || STATUS_LABELS.not_verified;
+                  return (
                   <tr key={opp.id} className="border-t">
                     <td className="p-3">{opp.title}</td>
                     <td className="p-3">{opp.users?.name || "Unknown"}</td>
+                    <td className="p-3 font-medium">
+                      <span className={orgStatus.color}>{orgStatus.text}</span>
+                    </td>
                     <td className="p-3">{opp.status}</td>
                     <td className="p-3">
                       {opp.status === "active" && (
@@ -339,10 +425,12 @@ export default function AdminDashboard() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
     </div>

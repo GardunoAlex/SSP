@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Star, MessageSquarePlus, Reply, Pencil } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Reply, Pencil, Check } from "lucide-react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { getSupabaseUser } from "../lib/apiHelpers";
 import { clearCached } from "../lib/apiCache";
@@ -8,6 +8,7 @@ import NewNav from "../components/newNav";
 import Footer from "../components/Footer";
 import { useAuth0 } from "@auth0/auth0-react";
 import { OpportunityDetailsSkeleton } from "../components/Skeletons";
+import { isOrgVerified } from "../lib/verificationUtils";
 
 
 export default function OpportunityDetails() {
@@ -307,8 +308,13 @@ export default function OpportunityDetails() {
         <div className="bg-white rounded-2xl shadow-sm border border-purple-100 p-8">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-purple-primary mb-3">
+              <h1 className="text-3xl font-bold text-purple-primary mb-3 flex items-center gap-3">
                 {opportunity.title}
+                {isOrgVerified(opportunity.users?.verified) && (
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full border-2 border-green-500 text-green-500 flex-shrink-0" title="Verified Organization">
+                    <Check className="w-4 h-4" />
+                  </span>
+                )}
               </h1>
               <p className="text-slate-700 text-lg">
                 {opportunity.description}
