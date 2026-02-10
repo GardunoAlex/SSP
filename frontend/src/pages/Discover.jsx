@@ -813,6 +813,146 @@ const Discover = () => {
               </div>
             </div>
           </aside>
+          {/* MOBILE FILTERS (same logic as lg, just different container) */}
+          {showFilters && (
+            <div className="lg:hidden fixed inset-0 z-50 bg-black/40">
+              <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-cream rounded-t-3xl">
+                
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                  <h2 className="text-lg font-bold text-purple-dark flex items-center gap-2">
+                    <Filter size={18} className="text-purple-primary" />
+                    Filters
+                  </h2>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="font-semibold text-purple-primary"
+                  >
+                    Done
+                  </button>
+                </div>
+
+                {/* 🔥 COPY-PASTE YOUR DESKTOP FILTER CARD HERE 🔥 */}
+                <div className="p-6">
+                  <div className="bg-white rounded-2xl shadow-lg p-6">
+
+                    {/* GPA */}
+                    <details className="mb-4 border-b border-slate-200 pb-4">
+                      <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
+                        <span>GPA Requirement</span>
+                        <ChevronDown size={16} />
+                      </summary>
+                      <div className="pl-2 space-y-2">
+                        {[
+                          { label: "Min GPA 3.5+", value: "3.5" },
+                          { label: "Min GPA 3.0+", value: "3.0" },
+                          { label: "All", value: "none" },
+                        ].map((option) => (
+                          <label key={option.value} className="flex items-center cursor-pointer">
+                            <input
+                              type="radio"
+                              checked={filters.gpa === option.value}
+                              onChange={() =>
+                                setFilters((prev) => ({ ...prev, gpa: option.value }))
+                              }
+                            />
+                            <span className="ml-3 text-sm">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+
+                    {/* Industry */}
+                    <details className="mb-4 border-b border-slate-200 pb-4">
+                      <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
+                        <span>Industry</span>
+                        <ChevronDown size={16} />
+                      </summary>
+                      <div className="pl-2 space-y-2">
+                        {MAJORS.map((major) => (
+                          <label key={major} className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={filters.majors.includes(major)}
+                              onChange={() => handleFilterChange("majors", major)}
+                            />
+                            <span className="ml-3 text-sm">{major}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+
+                    {/* Location */}
+                    <details className="mb-4 border-b border-slate-200 pb-4">
+                      <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
+                        <span>Location</span>
+                        <ChevronDown size={16} />
+                      </summary>
+                      <select
+                        value={filters.location}
+                        onChange={(e) =>
+                          setFilters((prev) => ({ ...prev, location: e.target.value }))
+                        }
+                        className="w-full px-3 py-2 border rounded-lg"
+                      >
+                        <option value="all">All Locations</option>
+                        <option value="Remote">Remote</option>
+                        <option value="On-Site">On-Site</option>
+                        <option value="Hybrid">Hybrid</option>
+                      </select>
+                    </details>
+
+                    {/* Compensation */}
+                    <details className="mb-4">
+                      <summary className="flex items-center justify-between font-semibold text-purple-dark mb-3 cursor-pointer">
+                        <span>Compensation</span>
+                        <ChevronDown size={16} />
+                      </summary>
+                      <div className="pl-2 space-y-2">
+                        {["Paid", "Stipend", "Unpaid"].map((value) => (
+                          <label key={value} className="flex items-center cursor-pointer">
+                            <input
+                              type="radio"
+                              checked={filters.compensation === value}
+                              onChange={() =>
+                                setFilters((prev) => ({ ...prev, compensation: value }))
+                              }
+                            />
+                            <span className="ml-3 text-sm">{value}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+
+                    {/* Verified */}
+                    <label className="flex items-center mt-4">
+                      <input
+                        type="checkbox"
+                        checked={filters.verifiedOnly}
+                        onChange={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            verifiedOnly: !prev.verifiedOnly,
+                          }))
+                        }
+                      />
+                      <span className="ml-3 font-semibold">Verified Only</span>
+                    </label>
+
+                    <button
+                      onClick={clearAllFilters}
+                      className="mt-6 w-full py-3 rounded-lg border font-semibold text-purple-primary"
+                    >
+                      Clear All
+                    </button>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+
 
           {/* Mobile Filter Button (UNCHANGED) */}
           <button
