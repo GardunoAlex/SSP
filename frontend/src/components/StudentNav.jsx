@@ -149,6 +149,42 @@ const StudentNav = () => {
                           <p className="font-bold text-purple-dark text-base">{user?.name}</p>
                           <p className="text-sm text-slate-500 truncate">{user?.email}</p>
                         </div>
+
+                        {/* Mobile-only navigation */}
+                        <div className="md:hidden">
+                        <Link
+                            to="/discover"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            Discover
+                        </Link>
+
+                        <Link
+                            to="/saved"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            Saved
+                        </Link>
+
+                        <Link
+                            to="/my-reviews"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            My Reviews
+                        </Link>
+
+                        <Link
+                            to="/"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block px-4 py-3 font-medium text-purple-dark hover:bg-purple-50"
+                        >
+                            Home
+                        </Link>
+
+                        </div>
 {/*                         <Link
                           to="/settings"
                           className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 transition-colors"
@@ -157,7 +193,6 @@ const StudentNav = () => {
                           <span className="text-sm font-medium text-purple-dark">Settings</span>
                         </Link> */}
 
-                      <div className="border-t border-slate-200 my-2"></div>
                         <button
                           onClick={handleLogout}
                           className="flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors w-full text-left"
