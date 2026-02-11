@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openSections, setOpenSections] = useState({ users: true, orgs: true, opps: true, students: true });
+  const [userVerifyFilter, setUserVerifyFilter] = useState("all");
   const [orgVerifyFilter, setOrgVerifyFilter] = useState("all");
   const [oppVerifyFilter, setOppVerifyFilter] = useState("all");
 
@@ -137,7 +138,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredUsers = orgVerifyFilter === "all"
+  const filteredUsersForUsers = userVerifyFilter === "all"
+    ? users
+    : users.filter((u) => (u.verified || "not_verified") === userVerifyFilter);
+
+  const filteredUsersForOrgs = orgVerifyFilter === "all"
     ? users
     : users.filter((u) => (u.verified || "not_verified") === orgVerifyFilter);
 
@@ -210,7 +215,7 @@ export default function AdminDashboard() {
 
         {openSections.users && (
           <>
-          <VerifyFilterPills value={orgVerifyFilter} onChange={setOrgVerifyFilter} />
+          <VerifyFilterPills value={userVerifyFilter} onChange={setUserVerifyFilter} />
           <div className="overflow-x-auto border rounded-lg">
             <table className="w-full bg-white table-fixed">
               <thead className="bg-gray-100">
@@ -223,7 +228,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u) => {
+                {filteredUsersForUsers.map((u) => {
                   const status =
                     STATUS_LABELS[u.verified] || STATUS_LABELS.not_verified;
 
@@ -302,7 +307,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u) => {
+                {filteredUsersForOrgs.map((u) => {
                   const status =
                     STATUS_LABELS[u.verified] || STATUS_LABELS.not_verified;
 
