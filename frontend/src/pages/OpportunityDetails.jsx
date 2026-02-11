@@ -310,11 +310,6 @@ export default function OpportunityDetails() {
             <div>
               <h1 className="text-3xl font-bold text-purple-primary mb-3 flex items-center gap-3">
                 {opportunity.title}
-                {isOrgVerified(opportunity.users?.verified) && (
-                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full border-2 border-green-500 text-green-500 flex-shrink-0" title="Verified Organization">
-                    <Check className="w-4 h-4" />
-                  </span>
-                )}
               </h1>
               <p className="text-slate-700 text-lg">
                 {opportunity.description}

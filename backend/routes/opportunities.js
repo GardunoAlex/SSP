@@ -31,7 +31,10 @@ router.get("/", async (req, res) => {
       .eq("status", "active");
 
     if (error) throw error;
-    res.json(data);
+    const verified = data.filter(
+      (opp) => opp.users?.verified === true || opp.users?.verified === "verified"
+    );
+    res.json(verified);
   } catch (err) {
     console.error("Error Fetching Opportunities: ", err);
     res.status(500).json({ error: "Failed to Fetch Opportunities" });
