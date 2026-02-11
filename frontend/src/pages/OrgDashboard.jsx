@@ -483,7 +483,18 @@ const OrgDashboard = () => {
                     const vd = getVerificationDisplay(organization.verified);
                     return (
                       <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${vd.colorClass}`}>
-                        {isOrgVerified(organization.verified) ? "✓ " : ""}{vd.text}
+                        {isOrgVerified(organization.verified) ? "✓ " : ""}
+                        
+                        { (vd.text !== "Verified" ) ? (
+                          <>
+                            {vd.text} 
+                            <span className={`font-bold`}>: Your organization and opportunities will remain hidden until verification is complete.</span>
+                          </>
+                        ) : (
+                          <>
+                           {vd.text}
+                          </>
+                        )}
                       </span>
                     );
                   })()}
