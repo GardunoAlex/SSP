@@ -13,6 +13,10 @@ const Hero = () => {
         ></div>
       </div>
 
+      <div className="relative z-10 bg-gradient-to-r from-purple-primary to-purple-dark text-white text-center text-sm py-3 px-4 rounded-full font-medium max-w-2xl mx-auto mb-8">
+        Welcome to the Beta version of StudentStarter+ — your feedback helps us improve!
+      </div>
+
       {/* Floating Decorative Blobs*/}
       <div className="absolute top-20 right-20 w-32 h-32 bg-purple-200/20 rounded-full blur-3xl animate-float-right"></div>
       <div className="absolute top-40 right-32 w-48 h-48 bg-yellow-400/10 rounded-full blur-3xl animate-float-delayed-right"></div>

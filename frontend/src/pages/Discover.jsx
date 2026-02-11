@@ -591,6 +591,9 @@ const Discover = () => {
                 <Search size={20} />
               </button>
             </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Searches by title, description, tags, and organization name
+            </p>
           </form>
 
           {/* Quick Filter Tabs */}

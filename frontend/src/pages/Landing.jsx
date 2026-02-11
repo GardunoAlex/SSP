@@ -36,11 +36,6 @@ const Landing = () => {
   return (
     <div className="bg-cream min-h-screen">
       <NewNav />
-      <div className="px-6 pt-24 pb-4">
-        <div className="bg-gradient-to-r from-purple-primary to-purple-dark text-white text-center text-sm py-2 px-4 rounded-full font-medium max-w-2xl mx-auto">
-          Welcome to the Beta version of StudentStarter+ — your feedback helps us improve!
-        </div>
-      </div>
       <Hero />
       <Features />
       <WhatWeDo />
