@@ -15,9 +15,9 @@ import supabase from '../supabaseClient.js';
 
 export const attachUser = async (req, res, next) => {
     try {
-        const auth0Id = req.auth.sub;
+        const auth0Id = req.auth.payload.sub;
 
-        const { data: user } = await supabase
+        const { data: user, error } = await supabase
         .from("users")
         .select("*")
         .eq("auth_id", auth0Id)
@@ -28,7 +28,7 @@ export const attachUser = async (req, res, next) => {
         }   
 
         req.user = user;
-        next(); // this allows for the next piece of middleware to execute
+        next(); 
 
     } catch {
         return res.status(500).json({ error: "Server error" });

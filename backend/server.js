@@ -59,7 +59,7 @@ app.use("/api/reviews", ReviewRoutes);
 // Protected routes
 app.use("/api/upload", jwtCheck, uploadRoutes);
 app.use("/api/auth", jwtCheck, authRoutes);
-app.use("/api/admin", jwtCheck, adminRoutes);
+app.use("/api/admin", jwtCheck, attachUser, requireAdmin, adminRoutes);
 app.use("/api/org", jwtCheck, orgRoutes);
 app.use("/api/student", jwtCheck, studentRoutes);
 
