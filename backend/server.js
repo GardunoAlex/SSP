@@ -1,12 +1,15 @@
 import express from "express";
 import dotenv from "dotenv";
 import { auth } from "express-oauth2-jwt-bearer";
-import authRoutes from "./routes/auth.js";
-import opportunitiesRoutes from "./routes/opportunities.js";
 import cors from "cors";
 import savedRoutes from "./routes/saved.js";
+import { attachUser } from "./middleware/attachUser.js";
+import { requireAdmin } from "./middleware/roles.js";
+import { requireOrg } from "./middleware/roles.js";
+import { requireStudent } from "./middleware/roles.js";
+import authRoutes from "./routes/auth.js";
+import opportunitiesRoutes from "./routes/opportunities.js";
 import orgRoutes from "./routes/org.js";
-
 import adminRoutes from "./routes/admin.js";
 import studentRoutes from "./routes/students.js";
 import savedOrganizationsRoutes from "./routes/savedOrgs.js";
