@@ -4,26 +4,17 @@
  * 
  */
 
-export const requireStudent = async (req, res, next) => {
-    if (req.user.role !== "student"){
-        return res.status(403).json({ error: "User is not a student"});
-    }
+const requireRole = (role) => {
+    return (req, res, next) => {
 
-    next();
+        if (!req.user || req.user.role !== role){
+            return res.status(403).json({ error: "Insufficient Permissions"})
+        }
+
+        next(); 
+    }
 }
 
-export const requireOrg = async (req, res, next) => {
-    if (req.user.role !== "org"){
-        return res.status(403).json({ error: "User is not an organization"})
-    }
-
-    next();
-}
-
-export const requireAdmin = async (req, res, next) => {
-    if (req.user.role !== "admin"){
-        return res.status(403).json({ error: "User is not an admin"})
-    }
-
-    next();
-}
+export const requireStudent = requireRole("student");
+export const requireOrg = requireRole("org");
+export const requireAdmin = requireRole("admin");

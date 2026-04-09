@@ -23,7 +23,7 @@ export const attachUser = async (req, res, next) => {
         .eq("auth_id", auth0Id)
         .single();
 
-        if (!user){
+        if ( error || !user){
             return res.status(403).json({ error: "User not found "})
         }   
 
