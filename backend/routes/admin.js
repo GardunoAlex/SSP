@@ -1,47 +1,46 @@
 import express from "express";
-import supabase from "../supabaseClient.js";
+import { getOrgs } from "../services/userService.js";
+import { getStudents } from "../services/userService.js";
+import { getOpportunities } from "../services/userService.js";
+import { modifyOrgVerification } from "../services/userService.js";
+import { orgCheck } from "../services/userService.js";
+import { deleteOrg } from "../services/userService.js";
+import { oppSoftDelete } from "../services/userService.js";
+import { oppDelete } from "../services/userService.js";
 
 const router = express.Router();
 
-// ✅ Get all org users
+/**
+ * I think this was originally meant for orgs, but it fetches all users.
+ * Need to double check where this is being called and what it's being used for
+ * 
+ */
 router.get("/users", async (req, res) => {
   try {
-    const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("role", "org");
-    if (error) throw error;
-    res.json(data);
+    const orgs = await getOrgs();
+    res.json(orgs);
   } catch (err) {
     console.error("Error fetching users:", err);
-    res.status(500).json({ error: "Failed to fetch users" });
+    res.status(500).json({ error: "Failed to fetch orgs" });
   }
 });
 
-// ✅ Get all students
+// fetch all students
 router.get("/students", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("id, name, email, role, created_at")
-      .eq("role", "student");
-    if (error) throw error;
-    res.json(data);
+    const students = await getStudents();
+    res.json(students);
   } catch (err) {
     console.error("Error fetching students:", err);
     res.status(500).json({ error: "Failed to fetch students" });
   }
 });
 
-// ✅ Get all opportunities
+// fetch all opportunities
 router.get("/opportunities", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("opportunities")
-      .select("*, users(name, email, role, verified)")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    res.json(data);
+    const opportunities = await getOpportunities();
+    res.json(opportunities);
   } catch (err) {
     console.error("Error fetching opportunities:", err);
     res.status(500).json({ error: "Failed to fetch opportunities" });
@@ -54,17 +53,17 @@ router.patch("/verify/:id", async (req, res) => {
     const { status } = req.body;
 
     const allowed = ["not_verified", "in_progress", "verified"];
+
     if (!allowed.includes(status)) {
       return res.status(400).json({ error: `Invalid status. Must be one of: ${allowed.join(", ")}` });
     }
 
-    const { data, error } = await supabase
-      .from("users")
-      .update({ verified: status })
-      .eq("id", id)
-      .select();
+    const data = await modifyOrgVerification(id, status);
 
-    if (error) throw error;
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: "Org not found" });
+    }
+
     res.json({ message: "Verification status updated", data });
   } catch (err) {
     console.error("Error updating verification status:", err);
@@ -72,28 +71,19 @@ router.patch("/verify/:id", async (req, res) => {
   }
 });
 
-// ✅ Remove organization (and all related data via cascade)
+// Remove organization (and all related data via cascade)
 router.delete("/organization/:id", async (req, res) => {
   const { id } = req.params;
   try {
     // Verify the user is actually an org before deleting
-    const { data: org, error: lookupError } = await supabase
-      .from("users")
-      .select("id, role")
-      .eq("id", id)
-      .eq("role", "org")
-      .single();
+    const org = await orgCheck(id);
 
-    if (lookupError || !org) {
+    if (!org) {
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    const { error } = await supabase
-      .from("users")
-      .delete()
-      .eq("id", id);
+    await deleteOrg(id);
 
-    if (error) throw error;
     res.json({ message: "Organization removed successfully" });
   } catch (err) {
     console.error("Error removing organization:", err);
@@ -101,38 +91,38 @@ router.delete("/organization/:id", async (req, res) => {
   }
 });
 
-// ✅ Close opportunity (soft delete)
+//soft delete opportunity
 router.patch("/opportunity/:id/close", async (req, res) => {
   const { id } = req.params;
-  console.log(id);
   try {
-    const { error } = await supabase
-      .from("opportunities")
-      .update({ status: "closed" })
-      .eq("id", id);
-    if (error) throw error;
+    await oppSoftDelete(id);
     res.json({ message: "Opportunity closed ✅" });
   } catch (err) {
+
+    if (err.message === "Opportunity not found") {
+      return res.status(404).json({ error: "Opportunity not found" });
+    }
+
     console.error("Error closing opportunity:", err);
     res.status(500).json({ error: "Failed to close opportunity" });
   }
 });
 
-// ✅ Remove opportunity
+//delete opportunity frfr
 router.delete("/opportunity/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const { error } = await supabase
-      .from("opportunities")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
+    await oppDelete(id);
     res.json({ message: "Opportunity removed successfully" });
   } catch (err) {
+    if (err.message === "Opportunity not found") {
+      return res.status(404).json({ error: "Opportunity not found" });
+    }
+
     console.error("Error removing opportunity:", err);
     res.status(500).json({ error: "Failed to remove opportunity" });
   }
 });
+
 
 export default router;
