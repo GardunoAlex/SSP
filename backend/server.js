@@ -21,7 +21,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Auth0 JWT middleware
+// Auth0 JWT middleware
 const jwtCheck = auth({
   audience: process.env.AUTH0_AUDIENCE,
   issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
@@ -47,26 +47,26 @@ app.use(
 app.use("/api/saved", savedRoutes);
 app.use("/api/savedOrgs", savedOrganizationsRoutes);
 
-app.use("/api/org", jwtCheck, orgRoutes);
 app.use("/api/organizations", organizationRoutes);
-app.use("/api/student", jwtCheck, studentRoutes);
 
-// ✅ Public routes
+// Public routes
 app.use("/api/opportunities", opportunitiesRoutes);
 app.use("/api/reviews", ReviewRoutes);
 
-// ✅ Protected routes
+// Protected routes
 app.use("/api/upload", jwtCheck, uploadRoutes);
 app.use("/api/auth", jwtCheck, authRoutes);
 app.use("/api/admin", jwtCheck, adminRoutes);
+app.use("/api/org", jwtCheck, orgRoutes);
+app.use("/api/student", jwtCheck, studentRoutes);
 
 
-// ✅ Example protected test route
+// Example protected test route
 app.get("/api/protected", jwtCheck, (req, res) => {
   res.json({ message: "Access granted ✅ You are authenticated!" });
 });
 
-// ✅ Server start
+// Server start
 app.listen(process.env.PORT || 3000, () =>
   console.log(`🚀 Server running on port ${process.env.PORT || 3000}`)
 );
