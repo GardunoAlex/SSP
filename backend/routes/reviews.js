@@ -2,6 +2,7 @@ import express from "express";
 import supabase from "../supabaseClient.js";
 import fetch from "node-fetch";
 import { auth } from "express-oauth2-jwt-bearer";
+//vercel
 
 const router = express.Router();
 
