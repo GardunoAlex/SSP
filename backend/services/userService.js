@@ -136,3 +136,119 @@ export const oppDelete = async (id) => {
 
     if (!data || data.length === 0) throw new Error("Opportunity not found");
 };
+
+//=================================== OPPORTUNITY API ROUTES ======================================
+
+
+/**
+ * Fetches all the public opportunities that are verified - the route is /
+ * 
+ * @returns {Promise<Array>} of verified opportunities
+ */
+export const getPublicOpportunities = async () => {
+    const {data: opportunities, error } = await supabase
+    .from("opportunities")
+    .select("*, users(name, verified)")
+    .eq("status", "active");
+
+    if (error) throw error;
+
+    const verified = opportunities.filter(
+        (opp) => opp.users?.verified === true || opp.users?.verified === "verified"
+      );
+
+    return verified;
+}
+
+
+/**
+ * Fetches the opprotunities of a specific org
+ * @param {String} org_id - org ID from our DB
+ * @returns {Promise<Array>} of opportunities from a specific org
+ */
+export const getOrgOpportunities = async (org_id) => {   
+    const {data: opportunities, error } = await supabase
+    .from("opportunities")
+    .select("*, users(name, verified)")
+    .eq("org_id", org_id)
+    .eq("status", "active");
+
+    if (error) throw error;
+
+    return opportunities;
+}
+
+
+/**
+ * Fetches a single opportunity based on id
+ * @param {String} id - id of the opportunity
+ * @returns {Promise<Object>} opportunity object
+ */
+export const getOpportunity = async (id) => {
+    const {data: opportunity, error } = await supabase
+    .from("opportunities")
+    .select("*, users(name, verified)")
+    .eq("id", id)
+    .maybeSingle();
+
+    if (error) throw error;
+    if (!opportunity) throw new Error("Opportunity not found");
+
+    return opportunity;
+}
+
+/**
+ * Creates an opportunity for an org
+ * @param {string} org_id 
+ * @param {Object} opportunityData - opportunity fields (title, description, etc.)
+ * @returns {Promise<Object>} created opportunity
+ */
+export const createOpportunity = async (org_id, opportunityData) => {
+    const { data: opportunity, error } = await supabase
+        .from("opportunities")
+        .insert([{ ...opportunityData, org_id, status: "active" }])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return opportunity;
+}
+
+/**
+ * Updates a specific opportunity
+ * @param {string} opportunityID - opportunity ID
+ * @param {Object} opportunityData - the updated fields for the opportunity
+ * @returns {Promise<Object>} updated opportunity
+ * TODO: COME BACK AND ADD THE OWNERSHIP CHECK LIKE WE DID IN DELETEOPPORTUNITY()
+ */
+export const updateOpportunity = async (opportunityID, opportunityData) => {
+    const { data: opportunity, error }  = await supabase
+    .from("opportunities")
+    .update({... opportunityData})
+    .eq("id", opportunityID)
+    .select()
+    .maybeSingle();   
+
+  if (error) throw error;
+
+  if (!opportunity) throw new Error("Opportunity not found");
+
+  return opportunity; 
+}
+
+/**
+ * Deletes an opportunity
+ * @param {string} id - opportunity id
+ * @param {string} org_id  - ID of the org trying to delete the opportunity
+ */
+export const deleteOpportunity = async (id, org_id) => {
+    const { data, error } = await supabase
+        .from("opportunities")
+        .delete()
+        .eq("id", id)
+        .eq("org_id", org_id)
+        .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error("Opportunity not found or unauthorized");
+};
