@@ -15,6 +15,29 @@ const requireRole = (role) => {
     }
 }
 
+/**
+ * Verifies that the user is a Student
+ * 
+ * Requires:
+ * - `attachUser` middleware to run before this (provides `req.user`)
+ * 
+ */
 export const requireStudent = requireRole("student");
+
+/**
+ * Verifies that the user is an organization
+ * 
+ * Requires:
+ * - `attachUser` middleware to run before this (provides `req.user`)
+ * 
+ */
 export const requireOrg = requireRole("org");
+
+/**
+ * Verifies that the user is an Admin
+ * 
+ * Requires:
+ * - `attachUser` middleware to run before this (provides `req.user`)
+ * 
+ */
 export const requireAdmin = requireRole("admin");

@@ -1,6 +1,5 @@
 import express from "express";
 import dotenv from "dotenv";
-import { auth } from "express-oauth2-jwt-bearer";
 import cors from "cors";
 import savedRoutes from "./routes/saved.js";
 import { attachUser } from "./middleware/attachUser.js";
@@ -14,8 +13,9 @@ import adminRoutes from "./routes/admin.js";
 import studentRoutes from "./routes/students.js";
 import savedOrganizationsRoutes from "./routes/savedOrgs.js";
 import organizationRoutes from "./routes/organizations.js";
-import ReviewRoutes from "./routes/reviews.js"
-import uploadRoutes from "./routes/upload.js"
+import ReviewRoutes from "./routes/reviews.js";
+import uploadRoutes from "./routes/upload.js";
+import { jwtCheck } from "./middleware/jwtCheck.js";
 
 
 dotenv.config();
@@ -23,13 +23,6 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Auth0 JWT middleware
-const jwtCheck = auth({
-  audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-  tokenSigningAlg: "RS256",
-});
 
 // cors middleware
 //https://ssp-phi-ivory.vercel.app
