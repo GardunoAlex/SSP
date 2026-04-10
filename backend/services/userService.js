@@ -3,7 +3,7 @@ import supabase from "../supabaseClient.js";
 //================================== ADMIN API ROUTE ====================================
 
 /**
- * Feteches all orgs for the admin panel -- route is admin/users
+ * Feteches all orgs for the admin panel -- `route is admin/users`
  * TODO: Need to come back and check the route too see where it's being used in the frontend
  * to see if we might change to all users instead of orgs -- based on the name of the route
  * @returns {Promise<Array>} of orgs
@@ -21,7 +21,7 @@ export const getOrgs = async () => {
 
 
 /**
- * Fetches all students for the admin panel -- route is admin/students
+ * Fetches all students for the admin panel -- `route is admin/students`
  * @returns {Promise<Array>} of students
  */
 export const getStudents = async () => {
@@ -37,7 +37,7 @@ export const getStudents = async () => {
 
 
 /**
- * Fetches all opportunities for the admin panel -- route is admin/students
+ * Fetches all opportunities for the admin panel -- `route is admin/students`
  * @returns {Promise<Array>} of opportunities
  */
 export const getOpportunities = async () => {
@@ -53,7 +53,7 @@ export const getOpportunities = async () => {
 
 
 /**
- * Updates the verification status of an org -- route is admin/verify/
+ * Updates the verification status of an org -- `route is admin/verify/`
  * @param {String} id - the orgs id
  * @param {String} status - the orgs verification status
  * @returns 
@@ -72,7 +72,7 @@ export const modifyOrgVerification = async (id, status) => {
 
 
 /**
- * Checks whether the passed in id is an org or not - path is admin//organization/:id
+ * Checks whether the passed in id is an org or not - `path is admin//organization/:id`
  * @param {String} id - the id for the org
  * @returns the org/not the org
  */
@@ -93,7 +93,7 @@ export const orgCheck = async (id) => {
 
 
 /**
- * Deletses an org given the id - admin/organization/:id
+ * Deletses an org given the id - `admin/organization/:id`
  * @param {String} id - the id of the org to delete
  */
 export const deleteOrg = async (id) => {
@@ -106,7 +106,7 @@ export const deleteOrg = async (id) => {
 }
 
 /**
- * Soft delete for opportunities - admin//opportunity/:id/close
+ * Soft delete for opportunities - `admin//opportunity/:id/close`
  * @param {String} id - id for the opportunity that we want to close
  */
 export const oppSoftDelete = async (id) => {
@@ -122,7 +122,7 @@ export const oppSoftDelete = async (id) => {
 };
 
 /**
- * delete opp - admin/opportunity/:id
+ * delete opp - `admin/opportunity/:id`
  * @param {String} id - id of opp we want to delete
  */
 export const oppDelete = async (id) => {
@@ -141,7 +141,7 @@ export const oppDelete = async (id) => {
 
 
 /**
- * Fetches all the public opportunities that are verified - the route is /
+ * Fetches all the public opportunities that are verified - `the route is /`
  * 
  * @returns {Promise<Array>} of verified opportunities
  */
@@ -252,3 +252,61 @@ export const deleteOpportunity = async (id, org_id) => {
     if (error) throw error;
     if (!data || data.length === 0) throw new Error("Opportunity not found or unauthorized");
 };
+
+//=================================== ORGANIZATIONS.JS API ROUTES ======================================
+
+/**
+ * Fetches all verified orgs - path is `get /`
+ * @returns {Promise<Array>} - verified orgs in the DB
+ */
+export const getVerifiedOrgs = async () => {
+    const { data: orgs, error } = await supabase
+    .from("users")
+    .select("id, name, email, org_description, website, verified, banner_url")
+    .eq("role", "org")
+    .eq("verified", "verified")
+
+    if (error) throw error;
+
+    return orgs;
+}
+
+/**
+ * Fetches org info for their dashboard - path is '`get /private`
+ * @param {string} userId - the id of the org trying to reach their dashboard
+ * @returns {Promise<Object>} - the org info
+ */
+export const getOrgForDashboard = async (userId) => {
+
+    const { data: org, error } = await supabase
+    .from("users")
+    .select("id, name, email, org_description, website, verified, banner_url")
+    .eq("id", userId)
+    .maybeSingle();
+
+    if (error) throw error;
+
+    if (!org) throw new Error("Org was not found");
+    
+    return org
+}
+
+/**
+ * Updates the orgs details for profile - path is `put /:id`
+ * @param {string} orgId - the id of the org
+ * @param {Object} orgData - the new info for the org
+ * @returns {Promise<Object>} updated org object
+ */
+export const updateOrg = async (orgId, orgData) => {
+    const { data: org, error } = await supabase
+    .from("users")  
+    .update({ ...orgData })
+    .eq("id", orgId)
+    .eq("role", "org")  // Added safety check
+    .select()
+    .maybeSingle();
+
+    if (error) throw error;
+
+    return org;
+}
