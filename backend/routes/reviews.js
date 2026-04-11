@@ -6,6 +6,7 @@ import { requireStudent } from "../middleware/roles.js";
 import { getOrgReviews } from "../services/userService.js";
 import { getStudentReviews } from "../services/userService.js";
 import { getOpportunityReviews } from "../services/userService.js";
+import { createReview } from "../services/userService.js";
 
 const router = express.Router();
 
@@ -47,44 +48,16 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/:id", jwtCheck, async (req, res) => {
+// Creating a new review
+router.post("/:id", jwtCheck, attachUser, requireStudent, async (req, res) => {
+  // param id is the ID of the opportunity
   const { id } = req.params;
   const { title, review, rating } = req.body;
+  const studentId = req.user.id;
 
   try {
-    const auth0Sub = req.auth.payload.sub;
-
-    const { data: user, error: userErr } = await supabase
-      .from("users")
-      .select("id, role")
-      .eq("auth_id", auth0Sub)
-      .single();
-
-    if (userErr || !user) {
-      return res.status(400).json({ error: "User not found in database" });
-    }
-
-    if (user.role === "org") {
-      return res.status(403).json({ error: "Organizations cannot write reviews" });
-    }
-
-    const { data, error } = await supabase
-      .from("reviews")
-      .insert([
-        {
-          opportunity_id: id,
-          student_id: user.id,
-          title,
-          review,
-          rating,
-        }
-      ])
-      .select();
-
-    if (error) throw error;
-
-    res.json({ message: "Review Created", data });
-
+    const newReview = await createReview(id, studentId, { title, review, rating })
+    res.json({ message: "Review Created", newReview });
   } catch (err) {
     console.error("Error Creating Review:", err);
     res.status(500).json({ error: "Failed to Create Review" });

@@ -362,3 +362,27 @@ export const getOpportunityReviews = async (id) => {
 
     return reviews;
 }
+
+/**
+ * Create a new review for an opportunity
+ * @param {string} id - ID of the opportunity
+ * @param {string} studentId - ID of the student 
+ * @param {Object} reviewData - review data
+ * @returns {Promise<Object>} - review data (title, review, rating)
+ */
+export const createReview = async (id, studentId, reviewData) => {
+    const { data: review, error } = await supabase
+    .from("reviews")
+    .insert([
+      {
+        opportunity_id: id,
+        student_id: studentId,
+        ...reviewData,
+      }
+    ])
+    .select();
+
+    if (error) throw error;
+
+    return review; 
+}
