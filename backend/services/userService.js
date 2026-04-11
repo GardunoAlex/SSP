@@ -310,3 +310,22 @@ export const updateOrg = async (orgId, orgData) => {
 
     return org;
 }
+
+//=================================== REVIEWS.JS API ROUTES ======================================
+
+/**
+ * Fetches the review of an org - path is `get /org/:orgId`
+ * @param {string} orgId - the id for reviews from the org that we want
+ * @returns {Promise<Array>} array of reviews for the org
+ */
+
+export const getOrgReviews = async (orgId) => {
+    const {data: reviews, error } = await supabase
+    .from("reviews")
+    .select("*, opportunities!inner(org_id, title)")
+    .eq("opportunities.org_id", orgId);
+
+    if (error) throw error;
+
+    return reviews; 
+}

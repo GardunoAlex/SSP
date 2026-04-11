@@ -1,17 +1,11 @@
 import express from "express";
 import supabase from "../supabaseClient.js";
-import fetch from "node-fetch";
-import { auth } from "express-oauth2-jwt-bearer";
+import { jwtCheck } from "../middleware/jwtCheck.js";
+import { getOrgReviews } from "../services/userService.js";
 //vercel
 
 const router = express.Router();
 
-
-const jwtCheck = auth({
-  audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-  tokenSigningAlg: "RS256",
-});
 
 
 // Get all reviews for an organization (across all its opportunities)
@@ -23,7 +17,6 @@ router.get("/org/:orgId", async (req, res) => {
       .from("reviews")
       .select("*, opportunities!inner(org_id, title)")
       .eq("opportunities.org_id", orgId);
-
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -31,6 +24,21 @@ router.get("/org/:orgId", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch organization reviews" });
   }
 });
+
+
+// Get all reviews for an organization (across all its opportunities)
+// Must be defined before /:id to avoid "org" being matched as an id
+router.get("/org/:orgId", async (req, res) => {
+  const { orgId } = req.params;
+  try {
+    const reviews = await getOrgReviews(orgId);
+    res.json(reviews);
+  } catch (err) {
+    console.error("Error fetching org reviews:", err);
+    res.status(500).json({ error: "Failed to fetch organization reviews" });
+  }
+});
+
 
 // Get all reviews written by the authenticated student (derived from JWT)
 // Must be defined before /:id to avoid "mine" being matched as an id
