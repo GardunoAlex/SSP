@@ -310,3 +310,167 @@ export const updateOrg = async (orgId, orgData) => {
 
     return org;
 }
+
+//=================================== REVIEWS.JS API ROUTES ======================================
+
+/**
+ * Fetches the review of an org - path is `get /org/:orgId`
+ * @param {string} orgId - the id for reviews from the org that we want
+ * @returns {Promise<Array>} array of reviews for the org
+ */
+
+export const getOrgReviews = async (orgId) => {
+    const {data: reviews, error } = await supabase
+    .from("reviews")
+    .select("*, opportunities!inner(org_id, title)")
+    .eq("opportunities.org_id", orgId);
+
+    if (error) throw error;
+
+    return reviews; 
+}
+
+/**
+ * Fetches reviews made from a student - path is `get /mine`
+ * @param {string} studentId - student ID
+ * @returns {Promise<Array>} - array of reviews from the student
+ */
+export const getStudentReviews = async (studentId) => {
+    const { data: reviews, error } = await supabase
+    .from("reviews")
+    .select("*, opportunities!inner(title, org_id, org:users!org_id(name, banner_url))")
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return reviews;
+}
+
+/**
+ * Fetches the reviews of a specific opportunity
+ * @param {string} id - the id of the opportunity
+ * @returns {Promise<Array>} - array of reviews for the opportunity 
+ */
+export const getOpportunityReviews = async (id) => {
+    const {data: reviews, error } = await supabase
+    .from("reviews")
+    .select("*")
+    .eq("opportunity_id", id);
+
+    if (error) throw error;
+
+    return reviews;
+}
+
+/**
+ * Create a new review for an opportunity
+ * @param {string} id - ID of the opportunity
+ * @param {string} studentId - ID of the student 
+ * @param {Object} reviewData - review data
+ * @returns {Promise<Object>} - review data (title, review, rating)
+ */
+export const createReview = async (id, studentId, reviewData) => {
+    const { data: review, error } = await supabase
+    .from("reviews")
+    .insert([
+      {
+        opportunity_id: id,
+        student_id: studentId,
+        ...reviewData,
+      }
+    ])
+    .select();
+
+    if (error) throw error;
+
+    return review; 
+}
+
+/**
+ * Verifies the user calling the api owns the review - path is `patch /:reviewId/reply`
+ * @param {string} userId - ID of the user
+ * @param {string} reviewId - ID of the review
+ * @returns {Promise<Object>} - we actually don't use this in the api
+ */
+export const verifyOrgReviewOwnership = async (userId, reviewId) => {
+    const { data: review, error } = await supabase
+        .from("reviews")
+        .select("id, opportunities!inner(org_id)")
+        .eq("id", reviewId)
+        .maybeSingle();
+
+    if (error) throw error;
+    if (!review) throw new Error("Review not found");
+    if (review.opportunities.org_id !== userId) throw new Error("Unauthorized");
+
+    return review;
+};
+
+/**
+ * Saves the review reply for the org - path is `patch /:reviewId/reply`
+ * @param {string} reviewId - ID of the review
+ * @param {string} org_reply - the reply for the review
+ * @returns {Promise<Object>} - the updated review
+ */
+export const orgReviewReply = async (reviewId, org_reply) => {
+    const { data, error } = await supabase
+    .from("reviews")
+    .update({ org_reply, org_reply_at: new Date().toISOString() })
+    .eq("id", reviewId)
+    .select();
+
+    if (error) throw error;
+
+    return data;
+}
+
+/**
+ * Verifies that the student that is trying to edit/delete the review owns the review - path is `patch /:reviewId` & `delete /:reviewId`
+ * @param {string} userId - the ID of the user
+ * @param {string} reviewId - the ID of the review
+ * @returns {Promise<void>}
+ */
+export const verifyStudentReviewOwnership = async (userId, reviewId) => {
+    const { data: review, error } = await supabase
+      .from("reviews")
+      .select("id, student_id")
+      .eq("id", reviewId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!review) throw new Error("Review not found");
+    if (review.student_id !== userId) throw new Error("Unauthorized");
+}
+
+/**
+ * Updates a students review - path is `patch /:reviewId`
+ * @param {string} reviewId - the ID of the review
+ * @param {Object} updates - values that need to be updated
+ * @returns {Promise<Array>} updated review
+ */
+export const studentReviewEdit = async (reviewId, updates) => {
+    const { data: review, error } = await supabase
+    .from("reviews")
+    .update(updates)
+    .eq("id", reviewId)
+    .select();
+
+    if (error) throw error;
+
+    return review;
+}
+
+/**
+ * Deletes a student review
+ * @param {string} reviewId - the ID of the review
+ * @returns {Promise<Void>}
+ */
+export const studentReviewDelete = async (reviewId) => {
+    const {error} = await supabase
+    .from("reviews")
+    .delete()
+    .eq("id", reviewId);
+
+    if (error) throw error;
+}
