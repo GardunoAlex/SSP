@@ -388,12 +388,12 @@ export const createReview = async (id, studentId, reviewData) => {
 }
 
 /**
- * Verifies the user calling the api owns the review
+ * Verifies the user calling the api owns the review - path is `patch /:reviewId/reply`
  * @param {string} userId - ID of the user
  * @param {string} reviewId - ID of the review
  * @returns {Promise<Object>} - we actually don't use this in the api
  */
-export const verifyReviewOwnership = async (userId, reviewId) => {
+export const verifyOrgReviewOwnership = async (userId, reviewId) => {
     const { data: review, error } = await supabase
         .from("reviews")
         .select("id, opportunities!inner(org_id)")
@@ -408,7 +408,7 @@ export const verifyReviewOwnership = async (userId, reviewId) => {
 };
 
 /**
- * Saves the review reply for the org
+ * Saves the review reply for the org - path is `patch /:reviewId/reply`
  * @param {string} reviewId - ID of the review
  * @param {string} org_reply - the reply for the review
  * @returns {Promise<Object>} - the updated review
@@ -423,4 +423,40 @@ export const orgReviewReply = async (reviewId, org_reply) => {
     if (error) throw error;
 
     return data;
+}
+
+/**
+ * Verifies that the student that is trying to edit the review owns the review - path is `patch /:reviewId`
+ * @param {string} userId - the ID of the user
+ * @param {string} reviewId - the ID of the review
+ * @returns {Promise<void>}
+ */
+export const verifyStudentReviewOwnership = async (userId, reviewId) => {
+    const { data: review, error } = await supabase
+      .from("reviews")
+      .select("id, student_id")
+      .eq("id", reviewId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!review) throw new Error("Review not found");
+    if (review.student_id !== userId) throw new Error("Unauthorized");
+}
+
+/**
+ * Updates a students review - path is `patch /:reviewId`
+ * @param {string} reviewId - the ID of the review
+ * @param {Object} updates - values that need to be updated
+ * @returns {Promise<Array>} updated review
+ */
+export const studentReviewEdit = async (reviewId, updates) => {
+    const { data: review, error } = await supabase
+    .from("reviews")
+    .update(updates)
+    .eq("id", reviewId)
+    .select();
+
+    if (error) throw error;
+
+    return review;
 }
