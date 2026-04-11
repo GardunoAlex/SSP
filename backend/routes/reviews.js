@@ -1,5 +1,4 @@
 import express from "express";
-import supabase from "../supabaseClient.js";
 import { jwtCheck } from "../middleware/jwtCheck.js";
 import { attachUser } from "../middleware/attachUser.js";
 import { requireStudent } from "../middleware/roles.js";
