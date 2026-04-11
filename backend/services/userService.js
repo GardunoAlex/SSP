@@ -460,3 +460,17 @@ export const studentReviewEdit = async (reviewId, updates) => {
 
     return review;
 }
+
+/**
+ * Deletes a student review
+ * @param {string} reviewId - the ID of the review
+ * @returns {Promise<Void>}
+ */
+export const studentReviewDelete = async (reviewId) => {
+    const {error} = await supabase
+    .from("reviews")
+    .delete()
+    .eq("id", reviewId);
+
+    if (error) throw error;
+}

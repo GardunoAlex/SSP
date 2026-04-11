@@ -12,6 +12,7 @@ import { verifyOrgReviewOwnership } from "../services/userService.js";
 import { orgReviewReply } from "../services/userService.js";
 import { verifyStudentReviewOwnership } from "../services/userService.js";
 import { studentReviewEdit } from "../services/userService.js";
+import { studentReviewDelete } from "../services/userService.js";
 
 const router = express.Router();
 
@@ -59,7 +60,6 @@ router.post("/:id", jwtCheck, attachUser, requireStudent, async (req, res) => {
   const { id } = req.params;
   const { title, review, rating } = req.body;
   const studentId = req.user.id;
-
   try {
     const newReview = await createReview(id, studentId, { title, review, rating })
     res.json({ message: "Review Created", newReview });
@@ -73,7 +73,6 @@ router.post("/:id", jwtCheck, attachUser, requireStudent, async (req, res) => {
 router.patch("/:reviewId/reply", jwtCheck, attachUser, requireOrg, async (req, res) => {
   const { reviewId } = req.params;
   const { org_reply } = req.body;
-
   try {
     const userId = req.user.id;
     await verifyOrgReviewOwnership(userId, reviewId);
@@ -97,9 +96,7 @@ router.patch("/:reviewId", jwtCheck, attachUser, requireStudent, async (req, res
   const { title, review, rating } = req.body;
   const userId = req.user.id;
   try {
-
     await verifyStudentReviewOwnership(userId, reviewId);
-
     const updates = {};
     if (title !== undefined) updates.title = title;
     if (review !== undefined) updates.review = review;
@@ -124,47 +121,20 @@ router.patch("/:reviewId", jwtCheck, attachUser, requireStudent, async (req, res
 });
 
 // Student deletes their own review
-router.delete("/:reviewId", jwtCheck, async (req, res) => {
+router.delete("/:reviewId", jwtCheck, attachUser, requireStudent, async (req, res) => {
   const { reviewId } = req.params;
+  const userId = req.user.id;
   try {
-    const auth0Sub = req.auth.payload.sub;
-
-    const { data: caller, error: callerErr } = await supabase
-      .from("users")
-      .select("id, role")
-      .eq("auth_id", auth0Sub)
-      .single();
-
-    if (callerErr || !caller) {
-      return res.status(400).json({ error: "User not found in database" });
-    }
-
-    if (caller.role === "org") {
-      return res.status(403).json({ error: "Organizations cannot delete reviews" });
-    }
-
-    const { data: existingReview, error: fetchErr } = await supabase
-      .from("reviews")
-      .select("id, student_id")
-      .eq("id", reviewId)
-      .single();
-
-    if (fetchErr || !existingReview) {
-      return res.status(404).json({ error: "Review not found" });
-    }
-
-    if (existingReview.student_id !== caller.id) {
-      return res.status(403).json({ error: "You can only delete your own reviews" });
-    }
-
-    const { error } = await supabase
-      .from("reviews")
-      .delete()
-      .eq("id", reviewId);
-
-    if (error) throw error;
+    await verifyStudentReviewOwnership(userId, reviewId);
+    await studentReviewDelete(reviewId);
     res.json({ message: "Review deleted" });
   } catch (err) {
+    if (err.message === "Review not found") {
+      return res.status(404).json({ error: "Review not found" });
+    }
+    if (err.message === "Unauthorized") {
+      return res.status(403).json({ error: "You can only edit/delete your own reviews" });
+    }
     console.error("Error deleting review:", err);
     res.status(500).json({ error: "Failed to delete review" });
   }
