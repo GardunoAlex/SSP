@@ -426,7 +426,7 @@ export const orgReviewReply = async (reviewId, org_reply) => {
 }
 
 /**
- * Verifies that the student that is trying to edit the review owns the review - path is `patch /:reviewId`
+ * Verifies that the student that is trying to edit/delete the review owns the review - path is `patch /:reviewId` & `delete /:reviewId`
  * @param {string} userId - the ID of the user
  * @param {string} reviewId - the ID of the review
  * @returns {Promise<void>}
