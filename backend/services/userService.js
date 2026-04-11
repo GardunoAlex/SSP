@@ -329,3 +329,20 @@ export const getOrgReviews = async (orgId) => {
 
     return reviews; 
 }
+
+/**
+ * Fetches reviews made from a student - path is `get /mine`
+ * @param {string} studentId - student ID
+ * @returns {Promise<Array>} - array of reviews from the student
+ */
+export const getStudentReviews = async (studentId) => {
+    const { data: reviews, error } = await supabase
+    .from("reviews")
+    .select("*, opportunities!inner(title, org_id, org:users!org_id(name, banner_url))")
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return reviews;
+}

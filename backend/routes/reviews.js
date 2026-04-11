@@ -1,30 +1,13 @@
 import express from "express";
 import supabase from "../supabaseClient.js";
 import { jwtCheck } from "../middleware/jwtCheck.js";
+import { attachUser } from "../middleware/attachUser.js";
+import { requireStudent } from "../middleware/roles.js";
 import { getOrgReviews } from "../services/userService.js";
+import { getStudentReviews } from "../services/userService.js";
 //vercel
 
 const router = express.Router();
-
-
-
-// Get all reviews for an organization (across all its opportunities)
-// Must be defined before /:id to avoid "org" being matched as an id
-router.get("/org/:orgId", async (req, res) => {
-  const { orgId } = req.params;
-  try {
-    const { data, error } = await supabase
-      .from("reviews")
-      .select("*, opportunities!inner(org_id, title)")
-      .eq("opportunities.org_id", orgId);
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error("Error fetching org reviews:", err);
-    res.status(500).json({ error: "Failed to fetch organization reviews" });
-  }
-});
-
 
 // Get all reviews for an organization (across all its opportunities)
 // Must be defined before /:id to avoid "org" being matched as an id
@@ -39,31 +22,13 @@ router.get("/org/:orgId", async (req, res) => {
   }
 });
 
-
 // Get all reviews written by the authenticated student (derived from JWT)
 // Must be defined before /:id to avoid "mine" being matched as an id
-router.get("/mine", jwtCheck, async (req, res) => {
+router.get("/mine", jwtCheck, attachUser, requireStudent, async (req, res) => {
   try {
-    const auth0Sub = req.auth.payload.sub;
-
-    const { data: caller, error: callerErr } = await supabase
-      .from("users")
-      .select("id")
-      .eq("auth_id", auth0Sub)
-      .single();
-
-    if (callerErr || !caller) {
-      return res.status(400).json({ error: "User not found in database" });
-    }
-
-    const { data, error } = await supabase
-      .from("reviews")
-      .select("*, opportunities!inner(title, org_id, org:users!org_id(name, banner_url))")
-      .eq("student_id", caller.id)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    res.json(data);
+    const studentId = req.user.id;
+    const reviews = await getStudentReviews(studentId);
+    res.json(reviews);
   } catch (err) {
     console.error("Error fetching student reviews:", err);
     res.status(500).json({ error: "Failed to fetch student reviews" });
