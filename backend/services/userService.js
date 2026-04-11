@@ -346,3 +346,19 @@ export const getStudentReviews = async (studentId) => {
 
     return reviews;
 }
+
+/**
+ * Fetches the reviews of a specific opportunity
+ * @param {string} id - the id of the opportunity
+ * @returns {Promise<Array>} - array of reviews for the opportunity 
+ */
+export const getOpportunityReviews = async (id) => {
+    const {data: reviews, error } = await supabase
+    .from("reviews")
+    .select("*")
+    .eq("opportunity_id", id);
+
+    if (error) throw error;
+
+    return reviews;
+}

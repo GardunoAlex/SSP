@@ -5,7 +5,7 @@ import { attachUser } from "../middleware/attachUser.js";
 import { requireStudent } from "../middleware/roles.js";
 import { getOrgReviews } from "../services/userService.js";
 import { getStudentReviews } from "../services/userService.js";
-//vercel
+import { getOpportunityReviews } from "../services/userService.js";
 
 const router = express.Router();
 
@@ -37,21 +37,15 @@ router.get("/mine", jwtCheck, attachUser, requireStudent, async (req, res) => {
 
 // get the opportunity reviews
 router.get("/:id", async (req, res) => {
-    const { id } = req.params;
-    try {
-        const {data, error } = await supabase
-        .from("reviews")
-        .select("*")
-        .eq("opportunity_id", id);
-
-        if (error) throw error;
-        console.log("succesfully fetched reviews");
-        res.json(data);
-    } catch (err) {
-        console.log("reviews fetch was unsuccessful", err);
-        res.status(500).json({error: "Failed to Fetch Reviews"});
-    }
-})
+  const { id } = req.params;
+  try {
+      const reviews = await getOpportunityReviews(id);
+      res.json(reviews);
+  } catch (err) {
+      console.error("reviews fetch was unsuccessful", err);
+      res.status(500).json({error: "Failed to Fetch Reviews"});
+  }
+});
 
 router.post("/:id", jwtCheck, async (req, res) => {
   const { id } = req.params;
