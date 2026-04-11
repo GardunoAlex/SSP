@@ -8,7 +8,6 @@ import { requireOrg } from "./middleware/roles.js";
 import { requireStudent } from "./middleware/roles.js";
 import authRoutes from "./routes/auth.js";
 import opportunitiesRoutes from "./routes/opportunities.js";
-import orgRoutes from "./routes/org.js";
 import adminRoutes from "./routes/admin.js";
 import studentRoutes from "./routes/students.js";
 import savedOrganizationsRoutes from "./routes/savedOrgs.js";
@@ -53,7 +52,6 @@ app.use("/api/reviews", ReviewRoutes);
 app.use("/api/upload", jwtCheck, uploadRoutes);
 app.use("/api/auth", jwtCheck, authRoutes);
 app.use("/api/admin", jwtCheck, attachUser, requireAdmin, adminRoutes);
-app.use("/api/org", jwtCheck, orgRoutes);
 app.use("/api/student", jwtCheck, studentRoutes);
 
 
