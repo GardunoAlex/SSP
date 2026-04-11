@@ -3,10 +3,13 @@ import supabase from "../supabaseClient.js";
 import { jwtCheck } from "../middleware/jwtCheck.js";
 import { attachUser } from "../middleware/attachUser.js";
 import { requireStudent } from "../middleware/roles.js";
+import { requireOrg } from "../middleware/roles.js";
 import { getOrgReviews } from "../services/userService.js";
 import { getStudentReviews } from "../services/userService.js";
 import { getOpportunityReviews } from "../services/userService.js";
 import { createReview } from "../services/userService.js";
+import { verifyReviewOwnership } from "../services/userService.js";
+import { orgReviewReply } from "../services/userService.js";
 
 const router = express.Router();
 
@@ -111,6 +114,29 @@ router.patch("/:reviewId/reply", jwtCheck, async (req, res) => {
     if (error) throw error;
     res.json({ message: "Reply saved", data });
   } catch (err) {
+    console.error("Error saving reply:", err);
+    res.status(500).json({ error: "Failed to save reply" });
+  }
+});
+
+
+// Org replies to a review on their own opportunity
+router.patch("/:reviewId/reply", jwtCheck, attachUser, requireOrg, async (req, res) => {
+  const { reviewId } = req.params;
+  const { org_reply } = req.body;
+
+  try {
+    const userId = req.user.id;
+    await verifyReviewOwnership(userId, reviewId);
+    const data = await orgReviewReply(reviewId, org_reply);
+    res.json({ message: "Reply saved", data });
+} catch (err) {
+    if (err.message === "Review not found") {
+        return res.status(404).json({ error: "Review not found" });
+    }
+    if (err.message === "Unauthorized") {
+        return res.status(403).json({ error: "You can only reply to reviews on your own opportunities" });
+    }
     console.error("Error saving reply:", err);
     res.status(500).json({ error: "Failed to save reply" });
   }

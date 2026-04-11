@@ -386,3 +386,41 @@ export const createReview = async (id, studentId, reviewData) => {
 
     return review; 
 }
+
+/**
+ * Verifies the user calling the api owns the review
+ * @param {string} userId - ID of the user
+ * @param {string} reviewId - ID of the review
+ * @returns {Promise<Object>} - we actually don't use this in the api
+ */
+export const verifyReviewOwnership = async (userId, reviewId) => {
+    const { data: review, error } = await supabase
+        .from("reviews")
+        .select("id, opportunities!inner(org_id)")
+        .eq("id", reviewId)
+        .maybeSingle();
+
+    if (error) throw error;
+    if (!review) throw new Error("Review not found");
+    if (review.opportunities.org_id !== userId) throw new Error("Unauthorized");
+
+    return review;
+};
+
+/**
+ * Saves the review reply for the org
+ * @param {string} reviewId - ID of the review
+ * @param {string} org_reply - the reply for the review
+ * @returns {Promise<Object>} - the updated review
+ */
+export const orgReviewReply = async (reviewId, org_reply) => {
+    const { data, error } = await supabase
+    .from("reviews")
+    .update({ org_reply, org_reply_at: new Date().toISOString() })
+    .eq("id", reviewId)
+    .select();
+
+    if (error) throw error;
+
+    return data;
+}
