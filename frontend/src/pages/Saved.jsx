@@ -108,10 +108,14 @@ const Saved = () => {
       
       if (!alreadySaved) {
         // Save
+        const token = await getAccessTokenSilently();
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, org_id: org.id }),
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ org_id: org.id }),
         });
         if (!res.ok) throw new Error('Failed to save org');
         
@@ -125,10 +129,14 @@ const Saved = () => {
         window.dispatchEvent(new CustomEvent('savedOrgChanged', { detail: { orgId: org.id, saved: true } }));
       } else {
         // Unsave
+        const token = await getAccessTokenSilently();
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, org_id: org.id }),
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ org_id: org.id }),
         });
         if (!res.ok) throw new Error('Failed to unsave org');
         
@@ -149,11 +157,12 @@ const Saved = () => {
   const fetchSavedOpportunities = async (userId, forceRefresh = false) => {
     const key = `savedOps:${userId}`;
     try {
+      const token = await getAccessTokenSilently();
       const data = await fetchWithCache(
-        key, 
-        `${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`, 
-        {}, 
-        120000, 
+        key,
+        `${import.meta.env.VITE_API_BASE_URL}/api/saved`,
+        { headers: { Authorization: `Bearer ${token}` } },
+        120000,
         forceRefresh
       );
       console.debug("Saved.jsx: fetched saved opportunities count", data.length);
@@ -172,11 +181,12 @@ const Saved = () => {
   const fetchSavedOrganizations = async (userId, forceRefresh = false) => {
     const key = `savedOrgs:${userId}`;
     try {
+      const token = await getAccessTokenSilently();
       const data = await fetchWithCache(
-        key, 
-        `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`, 
-        {}, 
-        120000, 
+        key,
+        `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`,
+        { headers: { Authorization: `Bearer ${token}` } },
+        120000,
         forceRefresh
       );
       console.debug("Saved.jsx: fetched saved organizations count", data.length);
@@ -195,12 +205,15 @@ const Saved = () => {
       const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
-      if (!userId) throw new Error('Unable to get user id');
+      const token = await getAccessTokenSilently();
 
       await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, opportunity_id: oppId }),
+        headers: 
+        { "Content-Type": "application/json" ,
+        Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ opportunity_id: oppId }),
       });
       
       // Clear cache and update state immediately
@@ -218,10 +231,14 @@ const Saved = () => {
       const userId = supaUser?.id;
       if (!userId) throw new Error('Unable to get user id');
 
+      const token = await getAccessTokenSilently();
       await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, org_id: orgId }),
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ org_id: orgId }),
       });
       
       // Clear cache and update state immediately

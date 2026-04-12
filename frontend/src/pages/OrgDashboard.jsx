@@ -37,7 +37,6 @@ const OrgDashboard = () => {
     setLoading(true);
     const minDelay = new Promise(r => setTimeout(r, MIN_LOAD_MS));
     try {
-      const supaUser = await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
 
       const token = await getAccessTokenSilently();
@@ -85,6 +84,7 @@ const OrgDashboard = () => {
     }
   };
 
+  // TODO; I DON'T THINK THAT THAT THIS AND THE API HANDLE IMAGE CHANGES
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     const token = await getAccessTokenSilently();

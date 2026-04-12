@@ -39,8 +39,8 @@ app.use(
   })
 );
 
-app.use("/api/saved", savedRoutes);
-app.use("/api/savedOrgs", savedOrganizationsRoutes);
+app.use("/api/saved", jwtCheck, attachUser, requireStudent, savedRoutes);
+app.use("/api/savedOrgs", jwtCheck, attachUser, requireStudent, savedOrganizationsRoutes);
 
 app.use("/api/organizations", organizationRoutes);
 
@@ -49,10 +49,10 @@ app.use("/api/opportunities", opportunitiesRoutes);
 app.use("/api/reviews", ReviewRoutes);
 
 // Protected routes
-app.use("/api/upload", jwtCheck, uploadRoutes);
+app.use("/api/upload", jwtCheck, attachUser, requireOrg, uploadRoutes);
 app.use("/api/auth", jwtCheck, authRoutes);
 app.use("/api/admin", jwtCheck, attachUser, requireAdmin, adminRoutes);
-app.use("/api/student", jwtCheck, studentRoutes);
+app.use("/api/student", jwtCheck, attachUser, requireStudent, studentRoutes);
 
 
 // Example protected test route
