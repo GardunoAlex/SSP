@@ -538,3 +538,66 @@ export const deleteSavedOpportunity = async (userId, opportunity_id) => {
 
       if (error) throw error;
 }
+
+//=================================== SAVEDORGS.JS API ROUTES ======================================
+
+/**
+ * Fetches the students saved org - the path is `get /`
+ * @param {string} userId - ID of the user
+ * @returns {Promise<Array>} - the saved orgs
+ */
+export const getSavedOrgs = async (userId) => {
+    const { data: orgs, error } = await supabase
+    .from('saved_organizations')
+    .select(`
+      id,
+      org_id,
+      org:org_id (
+        id,
+        name,
+        org_description,
+        website,
+        email
+        )
+      `)
+    .eq('user_id', userId);
+
+    if (error) throw error;
+
+    const formatted = orgs.map((s) => s.org);
+
+    return formatted;
+}
+
+/**
+ * Saves an org for a student - the path is `post /`
+ * @param {string} userId - the ID of the student
+ * @param {string} org_id - the ID of the org
+ * @returns {Promise<Object>} - the saved org
+ */
+export const saveOrg = async (userId, org_id) => {
+    const { data: org, error } = await supabase
+    .from('saved_organizations')
+    .upsert([{ user_id: userId, org_id }])
+    .select();
+
+    if (error) throw error;
+
+    return org;
+}
+
+/**
+ * Deletes a saved org for a student - the path is `delete /`
+ * @param {string} userId - the ID of the student
+ * @param {string} org_id - the ID of the org
+ * @returns {Promise<Void>}
+ */
+export const deleteSavedOrg = async (userId, org_id) => {
+    const { error } = await supabase
+    .from('saved_organizations')
+    .delete()
+    .eq('user_id', userId)
+    .eq('org_id', org_id);
+
+    if (error) throw error;
+}

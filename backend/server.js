@@ -40,7 +40,7 @@ app.use(
 );
 
 app.use("/api/saved", jwtCheck, attachUser, requireStudent, savedRoutes);
-app.use("/api/savedOrgs", savedOrganizationsRoutes);
+app.use("/api/savedOrgs", jwtCheck, attachUser, requireStudent, savedOrganizationsRoutes);
 
 app.use("/api/organizations", organizationRoutes);
 
