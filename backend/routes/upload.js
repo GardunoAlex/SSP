@@ -1,7 +1,6 @@
 import express from "express";
 import multer from "multer";
 import supabase from "../supabaseClient.js";
-import fetch from "node-fetch";
 
 const router = express.Router();
 
@@ -19,44 +18,10 @@ const upload = multer({
   },
 });
 
-// Helper: resolve Auth0 token → Supabase org user
-async function getOrgUser(token) {
-  let sub = null;
-  try {
-    const payload = token.split(".")[1];
-    const decoded = JSON.parse(Buffer.from(payload, "base64").toString("utf-8"));
-    sub = decoded?.sub;
-  } catch (err) {
-    // fallback to userinfo
-  }
-
-  if (!sub) {
-    const userRes = await fetch("https://dev-hdl1kw87a8apz4ni.us.auth0.com/userinfo", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!userRes.ok) throw new Error("Failed to fetch Auth0 userinfo");
-    const user = await userRes.json();
-    sub = user.sub;
-  }
-
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, role")
-    .eq("auth_id", sub)
-    .maybeSingle();
-
-  if (error || !data) throw new Error("User not found");
-  if (data.role !== "org") throw new Error("Only organizations can upload banners");
-  return data;
-}
-
 // POST /api/upload/banner
 router.post("/banner", upload.single("image"), async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Missing auth token" });
-
-    const orgUser = await getOrgUser(token);
+    const orgId = req.user.id;
     const { entity_type, entity_id } = req.body;
 
     if (!entity_type || !entity_id) {
@@ -70,7 +35,7 @@ router.post("/banner", upload.single("image"), async (req, res) => {
     }
 
     // Ownership check: org can only upload for themselves or their own opportunities
-    if (entity_type === "org" && entity_id !== orgUser.id) {
+    if (entity_type === "org" && entity_id !== orgId) {
       return res.status(403).json({ error: "You can only upload banners for your own organization" });
     }
 
@@ -82,7 +47,7 @@ router.post("/banner", upload.single("image"), async (req, res) => {
         .single();
 
       if (oppErr || !opp) return res.status(404).json({ error: "Opportunity not found" });
-      if (opp.org_id !== orgUser.id) {
+      if (opp.org_id !== orgId) {
         return res.status(403).json({ error: "You can only upload banners for your own opportunities" });
       }
     }
