@@ -474,3 +474,67 @@ export const studentReviewDelete = async (reviewId) => {
 
     if (error) throw error;
 }
+
+//=================================== SAVED.JS API ROUTES ======================================
+
+/**
+ * Gets the saved opportunities from the user - path is `get /`
+ * @param {string} userId - the id for the user
+ * @returns {Promise<Array>} - the array of saved opportunities
+ */
+export const getSavedOpportunities = async (userId) => {
+    const {data: savedOpportunities, error} = await supabase
+    .from("saved_opportunities")
+    .select(`
+      id,
+      opportunity_id,
+      opportunities (
+        id,
+        title,
+        description,
+        gpa_requirement,
+        apply_link,
+        majors
+      )
+    `)
+    .eq("user_id", userId);
+
+    if (error) throw error;
+
+    const formatted = savedOpportunities.map((s) => s.opportunities);
+
+    return formatted;
+}
+
+/**
+ * Saves the opportunity for the user - the path is `post /`
+ * @param {string} userId - the ID of the user
+ * @param {string} opportunity_id - the ID of the opportunity
+ * @returns {Promise<Object>} - the saved opportunity
+ */
+export const saveOpportunity = async (userId, opportunity_id) => {
+    const { data: opportunity, error } = await supabase
+    .from("saved_opportunities")
+    .upsert([{ user_id: userId, opportunity_id }])
+    .select();
+
+    if (error) throw error;
+
+    return opportunity;
+}
+
+/**
+ * Deletes a saved opportunity `delete /`
+ * @param {string} userId - the id of the user
+ * @param {string} opportunity_id - the id of the opportunity
+ * @returns {Promise<Void>}
+ */
+export const deleteSavedOpportunity = async (userId, opportunity_id) => {
+    const { error } = await supabase
+      .from("saved_opportunities")
+      .delete()
+      .eq("user_id", userId)
+      .eq("opportunity_id", opportunity_id);
+
+      if (error) throw error;
+}

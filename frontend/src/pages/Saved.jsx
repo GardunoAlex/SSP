@@ -149,11 +149,12 @@ const Saved = () => {
   const fetchSavedOpportunities = async (userId, forceRefresh = false) => {
     const key = `savedOps:${userId}`;
     try {
+      const token = await getAccessTokenSilently();
       const data = await fetchWithCache(
-        key, 
-        `${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`, 
-        {}, 
-        120000, 
+        key,
+        `${import.meta.env.VITE_API_BASE_URL}/api/saved`,
+        { headers: { Authorization: `Bearer ${token}` } },
+        120000,
         forceRefresh
       );
       console.debug("Saved.jsx: fetched saved opportunities count", data.length);
@@ -195,12 +196,15 @@ const Saved = () => {
       const supaUser = cachedSupaUser || await getSupabaseUser(getAccessTokenSilently);
       if (!cachedSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
       const userId = supaUser?.id;
-      if (!userId) throw new Error('Unable to get user id');
+      const token = await getAccessTokenSilently();
 
       await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/saved`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, opportunity_id: oppId }),
+        headers: 
+        { "Content-Type": "application/json" ,
+        Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ opportunity_id: oppId }),
       });
       
       // Clear cache and update state immediately
