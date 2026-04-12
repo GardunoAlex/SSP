@@ -52,7 +52,7 @@ app.use("/api/reviews", ReviewRoutes);
 app.use("/api/upload", jwtCheck, uploadRoutes);
 app.use("/api/auth", jwtCheck, authRoutes);
 app.use("/api/admin", jwtCheck, attachUser, requireAdmin, adminRoutes);
-app.use("/api/student", jwtCheck, studentRoutes);
+app.use("/api/student", jwtCheck, attachUser, requireStudent, studentRoutes);
 
 
 // Example protected test route

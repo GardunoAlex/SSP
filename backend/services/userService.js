@@ -601,3 +601,31 @@ export const deleteSavedOrg = async (userId, org_id) => {
 
     if (error) throw error;
 }
+
+//=================================== STUDENTS.JS API ROUTES ======================================
+
+export const getStudent = async (studentId) => {
+    const { data: student, error } = await supabase
+    .from('users')
+    .select('id, name, email, role, created_at')
+    .eq('id', studentId)
+    .maybeSingle();
+
+    if (error) throw error;
+    if (!student) throw new Error('Student not found');
+
+    return student;
+};
+
+export const updateStudent = async (studentId, updates) => {
+    const { data: student, error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', studentId)
+    .select();
+
+    if (error) throw error;
+
+    return student;
+}
+
