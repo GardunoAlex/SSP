@@ -1,33 +1,14 @@
 import express from "express";
-import supabase from "../supabaseClient.js";
-
+import { getSavedOpportunities, saveOpportunity, deleteSavedOpportunity } from "../services/userService.js";
 const router = express.Router();
 
 // Get all saved opportunities for a user
-router.get("/:user_id", async (req, res) => {
-  const { user_id } = req.params;
-
+router.get("/", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("saved_opportunities")
-      .select(`
-        id,
-        opportunity_id,
-        opportunities (
-          id,
-          title,
-          description,
-          gpa_requirement,
-          apply_link,
-          majors
-        )
-      `)
-      .eq("user_id", user_id);
+    const userId = req.user.id;
+    const opportunities = await getSavedOpportunities(userId)
 
-    if (error) throw error;
-
-    const formatted = data.map((s) => s.opportunities);
-    res.json(formatted);
+    res.json(opportunities);
   } catch (err) {
     console.error("Error fetching saved opportunities:", err);
     res.status(500).json({ error: "Failed to fetch saved opportunities" });
@@ -37,19 +18,15 @@ router.get("/:user_id", async (req, res) => {
 // Save an opportunity
 router.post("/", async (req, res) => {
   try {
-    const { user_id, opportunity_id } = req.body;
+    const userId = req.user.id;
+    const { opportunity_id } = req.body;
 
-    if (!user_id || !opportunity_id) {
-      return res.status(400).json({ error: "Missing user_id or opportunity_id" });
+    if (!opportunity_id) {
+      return res.status(400).json({ error: "Missing opportunity_id" });
     }
 
-    const { data, error } = await supabase
-      .from("saved_opportunities")
-      .upsert([{ user_id, opportunity_id }])
-      .select();
-
-    if (error) throw error;
-    res.json({ message: "Saved successfully", data });
+    const opportunity = await saveOpportunity(userId, opportunity_id);
+    res.json({ message: "Saved successfully", opportunity });
   } catch (err) {
     console.error("Error saving opportunity:", err);
     res.status(500).json({ error: "Failed to save opportunity" });
@@ -58,19 +35,14 @@ router.post("/", async (req, res) => {
 
 router.delete("/", async (req, res) => {
   try {
-    const { user_id, opportunity_id } = req.body;
+    const { opportunity_id } = req.body;
+    const userId = req.user.id;
 
-    if (!user_id || !opportunity_id) {
-      return res.status(400).json({ error: "Missing user_id or opportunity_id" });
+    if (!opportunity_id) {
+      return res.status(400).json({ error: "Missing opportunity_id" });
     }
 
-    const { error } = await supabase
-      .from("saved_opportunities")
-      .delete()
-      .eq("user_id", user_id)
-      .eq("opportunity_id", opportunity_id);
-
-    if (error) throw error;
+    await deleteSavedOpportunity(userId, opportunity_id);
     res.json({ message: "Unsave successful" });
   } catch (err) {
     console.error("Error unsaving:", err);

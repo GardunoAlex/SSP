@@ -474,3 +474,158 @@ export const studentReviewDelete = async (reviewId) => {
 
     if (error) throw error;
 }
+
+//=================================== SAVED.JS API ROUTES ======================================
+
+/**
+ * Gets the saved opportunities from the user - path is `get /`
+ * @param {string} userId - the id for the user
+ * @returns {Promise<Array>} - the array of saved opportunities
+ */
+export const getSavedOpportunities = async (userId) => {
+    const {data: savedOpportunities, error} = await supabase
+    .from("saved_opportunities")
+    .select(`
+      id,
+      opportunity_id,
+      opportunities (
+        id,
+        title,
+        description,
+        gpa_requirement,
+        apply_link,
+        majors
+      )
+    `)
+    .eq("user_id", userId);
+
+    if (error) throw error;
+
+    const formatted = savedOpportunities.map((s) => s.opportunities);
+
+    return formatted;
+}
+
+/**
+ * Saves the opportunity for the user - the path is `post /`
+ * @param {string} userId - the ID of the user
+ * @param {string} opportunity_id - the ID of the opportunity
+ * @returns {Promise<Object>} - the saved opportunity
+ */
+export const saveOpportunity = async (userId, opportunity_id) => {
+    const { data: opportunity, error } = await supabase
+    .from("saved_opportunities")
+    .upsert([{ user_id: userId, opportunity_id }])
+    .select();
+
+    if (error) throw error;
+
+    return opportunity;
+}
+
+/**
+ * Deletes a saved opportunity `delete /`
+ * @param {string} userId - the id of the user
+ * @param {string} opportunity_id - the id of the opportunity
+ * @returns {Promise<Void>}
+ */
+export const deleteSavedOpportunity = async (userId, opportunity_id) => {
+    const { error } = await supabase
+      .from("saved_opportunities")
+      .delete()
+      .eq("user_id", userId)
+      .eq("opportunity_id", opportunity_id);
+
+      if (error) throw error;
+}
+
+//=================================== SAVEDORGS.JS API ROUTES ======================================
+
+/**
+ * Fetches the students saved org - the path is `get /`
+ * @param {string} userId - ID of the user
+ * @returns {Promise<Array>} - the saved orgs
+ */
+export const getSavedOrgs = async (userId) => {
+    const { data: orgs, error } = await supabase
+    .from('saved_organizations')
+    .select(`
+      id,
+      org_id,
+      org:org_id (
+        id,
+        name,
+        org_description,
+        website,
+        email
+        )
+      `)
+    .eq('user_id', userId);
+
+    if (error) throw error;
+
+    const formatted = orgs.map((s) => s.org);
+
+    return formatted;
+}
+
+/**
+ * Saves an org for a student - the path is `post /`
+ * @param {string} userId - the ID of the student
+ * @param {string} org_id - the ID of the org
+ * @returns {Promise<Object>} - the saved org
+ */
+export const saveOrg = async (userId, org_id) => {
+    const { data: org, error } = await supabase
+    .from('saved_organizations')
+    .upsert([{ user_id: userId, org_id }])
+    .select();
+
+    if (error) throw error;
+
+    return org;
+}
+
+/**
+ * Deletes a saved org for a student - the path is `delete /`
+ * @param {string} userId - the ID of the student
+ * @param {string} org_id - the ID of the org
+ * @returns {Promise<Void>}
+ */
+export const deleteSavedOrg = async (userId, org_id) => {
+    const { error } = await supabase
+    .from('saved_organizations')
+    .delete()
+    .eq('user_id', userId)
+    .eq('org_id', org_id);
+
+    if (error) throw error;
+}
+
+//=================================== STUDENTS.JS API ROUTES ======================================
+
+export const getStudent = async (studentId) => {
+    const { data: student, error } = await supabase
+    .from('users')
+    .select('id, name, email, role, created_at')
+    .eq('id', studentId)
+    .maybeSingle();
+
+    if (error) throw error;
+    if (!student) throw new Error('Student not found');
+
+    return student;
+};
+
+export const updateStudent = async (studentId, updates) => {
+    const { data: student, error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', studentId)
+    .select();
+
+    if (error) throw error;
+
+    return student;
+}
+

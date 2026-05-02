@@ -95,8 +95,12 @@ const Discover = () => {
         if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
         const userId = supaUser?.id;
         if (!userId) return setSavedOrgIds([]);
+        const token = await getAccessTokenSilently();
         const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         const data = await res.json();
         setSavedOrgIds(data.map((o) => String(o.id)));
@@ -117,9 +121,12 @@ const Discover = () => {
         if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
         const userId = supaUser?.id;
         if (!userId) return setSavedOppIds([]);
-
+        const token = await getAccessTokenSilently();
         const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/saved/${userId}`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/saved`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         const data = await res.json();
         console.log("Fetched saved opps data:", data);
@@ -144,8 +151,12 @@ const Discover = () => {
             if (!validSupaUser && supaUser?.id) setCachedSupaUser(supaUser);
             const userId = supaUser?.id;
             if (!userId) return setSavedOrgIds([]);
+            const token = await getAccessTokenSilently();
             const res = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs/${userId}`,
+              `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
             );
             const data = await res.json();
             setSavedOrgIds(data.map((o) => String(o.id)));
@@ -285,12 +296,16 @@ const Discover = () => {
       const alreadySaved = savedOppIds.includes(String(opp.id));
       if (!alreadySaved) {
         //Save
+        const token = await getAccessTokenSilently();
         const res = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/saved`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ opportunity_id: opp.id }),
           },
         );
         if (!res.ok) throw new Error("Failed to save opportunity");
@@ -300,12 +315,16 @@ const Discover = () => {
         clearCached(`savedOps:${userId}`);
       } else {
         //Unsave
+        const token = await getAccessTokenSilently();
         const res = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/saved`,
           {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, opportunity_id: opp.id }),
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ opportunity_id: opp.id }),
           },
         );
         if (!res.ok) throw new Error("Failed to unsave opportunity");
@@ -339,12 +358,16 @@ const Discover = () => {
 
       const alreadySaved = savedOrgIds.includes(String(org.id));
       if (!alreadySaved) {
+        const token = await getAccessTokenSilently();
         const res = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, org_id: org.id }),
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ org_id: org.id }),
           },
         );
         if (!res.ok) throw new Error("Failed to save org");
@@ -358,12 +381,16 @@ const Discover = () => {
           }),
         );
       } else {
+        const token = await getAccessTokenSilently();
         const res = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/savedOrgs`,
           {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, org_id: org.id }),
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ org_id: org.id }),
           },
         );
         if (!res.ok) throw new Error("Failed to unsave org");
